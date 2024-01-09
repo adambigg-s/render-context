@@ -35,7 +35,7 @@ float euler_rotate_u(int i, int j, int k, Cube* cube) {
            + j * (sin(a) * sin(b) * cos(c)
                   - cos(a) * sin(c))
            + k * (cos(a) * sin(b) * cos(c)
-                  + sin(a) * sin(c));
+                  + sin(a) * sin(c));;
 }
 
 float euler_rotate_v(int i, int j, int k, Cube* cube) {
@@ -44,14 +44,14 @@ float euler_rotate_v(int i, int j, int k, Cube* cube) {
            + j * (sin(a) * sin(b) * sin(c)
                   + cos(a) * cos(c))
            + k * (cos(a) * sin(b) * sin(c)
-                  - sin(a) * cos(c));
+                  - sin(a) * cos(c));;
 }
 
 float euler_rotate_w(int i, int j, int k, Cube* cube) {
     float a = cube->a, b = cube->b, c = cube->c;
     return i * (-sin(b))
            + j * sin(a) * cos(b)
-           + k * cos(a) * cos(b);
+           + k * cos(a) * cos(b);;
 }
 
 char intchr(int idx) {

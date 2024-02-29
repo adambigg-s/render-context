@@ -1,5 +1,5 @@
 # render-context
-fully terminal based satellite tracking. true 3d rendering, raytraced lighting and realtime updates. made with no gl of any kind, everything is drawn into terminal with with text and ANSI escape codes
+fully terminal based satellite tracking. true 3d rendering, raytraced lighting and realtime updates. made with no gl of any kind, everything is drawn into terminal with with text and ANSI escape codes and ASCII characters
 <br />
 <br />
 to clear up some misconceptions, this isn't an image generator. this a first person, 3d terminal solar system simulation that you can fly around in. it renders in real time and all in the terminal

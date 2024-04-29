@@ -23,7 +23,7 @@ public:
     int red, green, blue;
 
     static Color cons(int r, int g, int b) {
-        return Color { r, g, b };
+        return Color { min(r, 255), min(g, 255), min(b, 255) };
     }
 
     void attenuate(float lighting) {
@@ -177,7 +177,10 @@ public:
                 while(getline(token_stream, component, ';')) {
                     rgb.push_back(stoi(component));
                 }
-                texture.push_back(Color::cons(rgb[0], rgb[1], rgb[2]));
+                Color color = Color::cons(rgb[0], rgb[1], rgb[2]);
+                color.attenuate(1.25);
+                color = Color::cons(color.red, color.green, color.blue);
+                texture.push_back(color);
                 currwidth += 1;
             }
 
@@ -201,11 +204,12 @@ public:
     float radius;
     float rotation;
     float tilt;
+    float progression;
     Vec3 position;
     Texture texture;
 
-    static Planet cons(float radius, Vec3 position, string texpath, float tilt) {
-        return Planet { radius, 0, tilt, position, Texture::cons(texpath) };
+    static Planet cons(float radius, Vec3 position, string texpath, float tilt, float prog) {
+        return Planet { radius, 0, tilt, prog, position, Texture::cons(texpath) };
     }
 };
 
@@ -231,6 +235,7 @@ public:
                 
                 world.rotatez(planet->rotation);
                 world.rotatex(planet->tilt);
+                world.rotatez(planet->progression);
                 
                 Vec3 normal = world;
                 normal.normalize();
@@ -281,7 +286,7 @@ public:
 
 int main() {
     Buffer buffer = Buffer::cons(70, 200);
-    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH, 0.45);
+    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH, 0.50, PI / 2);
     Vec3 camera_pos = Vec3::cons(-55, 0, 0);
     Vec3 lighting = Vec3::cons(-1, 1, 0.5);
     lighting.normalize();
@@ -289,10 +294,11 @@ int main() {
     Renderer renderer = Renderer { &planet, &buffer, camera_pos, lighting };
 
     cout << "\x1b[?25l";
+    cout << "\x1b[2J";
     while (true) {
         {
-            renderer.lightsource.rotatez(0.01);
-            renderer.planet->rotation -= 0.01;
+            lighting.rotatez(-0.05);
+            planet.rotation += 0.01;
         }
         buffer.clear();
         renderer.render_planet();

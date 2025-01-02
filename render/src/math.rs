@@ -7,7 +7,7 @@ use crate::Float;
 
 
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Vec3<T>
 {
     pub x: T,

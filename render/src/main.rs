@@ -14,13 +14,13 @@ use std::io::{stdout, Write};
 use math::{pi, Vec3};
 use buffer::Buffer;
 use viewmodel::{draw3d_point, ViewModel};
-
-use crate::{buffer::cyan, viewmodel::{draw_point, draw_view}};
-
+use crate::viewmodel::{draw_point, draw_view};
 
 
-const HEIGHT: usize = 300;
-const WIDTH: usize = 400;
+
+const RES: usize = 2;
+const HEIGHT: usize = RES * 120;
+const WIDTH: usize = RES * 160;
 const FPS: usize = 60;
 
 type Float = f32;
@@ -43,13 +43,13 @@ fn main() {
     let mut buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
     let mut debug_buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
 
-    let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(0, 0, 0));
-    let point = Vec3::cons(10, 10, 0);
+    let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(10.0, 0.0, 0.0));
+    let point = Vec3::cons(40.0, 0.0, 0.0);
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         buffer.blackout();
         get_movement(&mut viewmodel, window.get_keys());
-        draw3d_point(&viewmodel, &mut buffer);
+        draw3d_point(&viewmodel, &mut buffer, &point);
 
         window.update_with_buffer(buffer.pixels(), buffer.width(), buffer.height()).unwrap();
 
@@ -65,15 +65,6 @@ fn main() {
                     let color = (((xp + yp) as u32) << 16) | ((yp as u32) << 8) | (xp as u32);
                     debug_buffer.place_pixel(x, y, color);
                 }
-            }
-            if (viewmodel.position.x as usize) < buffer.width()
-                && (viewmodel.position.y as usize) < buffer.height()
-            {
-                debug_buffer.place_pixel(
-                    viewmodel.position.x as usize,
-                    viewmodel.position.y as usize,
-                    cyan(),
-                );
             }
             print!("\r\x1B[2K");
             print!("x: {}, y: {}, z: {}, rot: {}, tilt: {}, sin: {}, cos: {}",

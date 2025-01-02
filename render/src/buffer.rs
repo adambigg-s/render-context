@@ -14,7 +14,7 @@ impl Buffer
 {
     pub fn cons(height: usize, width: usize) -> Buffer
     {
-        Buffer { height, width, pixels: vec![black(); height * width] }
+        Buffer { height, width, pixels: vec![color_tag(99); height * width] }
     }
 
     pub fn width(&self) -> usize
@@ -44,7 +44,7 @@ impl Buffer
 
     pub fn blackout(&mut self)
     {
-        self.pixels.iter_mut().for_each(|pix| *pix = black());
+        self.pixels.iter_mut().for_each(|pix| *pix = color_tag(99));
     }
 
     pub fn place_pixel(&mut self, x: usize, y: usize, data: Color)
@@ -63,17 +63,11 @@ impl Buffer
     }
 }
 
-pub fn black() -> Color
+pub fn color_tag(tag: u8) -> Color
 {
-    0xFF000000
-}
-
-pub fn cyan() -> Color
-{
-    0xFF00FFFF
-}
-
-pub fn red() -> Color
-{
-    0xFFFF2222
+    match tag {
+        1 => 0xff00ffff, // cyan
+        2 => 0xffff2222, // rusty red
+        _ => 0xff000000, // black
+    }
 }

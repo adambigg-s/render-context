@@ -14,7 +14,7 @@ impl Buffer
 {
     pub fn cons(height: usize, width: usize) -> Buffer
     {
-        Buffer { height, width, pixels: vec![0xFF000000; height * width] }
+        Buffer { height, width, pixels: vec![black(); height * width] }
     }
 
     pub fn width(&self) -> usize
@@ -27,6 +27,16 @@ impl Buffer
         self.height
     }
 
+    pub fn halfwidth(&self) -> usize
+    {
+        self.width / 2
+    }
+
+    pub fn halfheight(&self) -> usize
+    {
+        self.height / 2
+    }
+
     pub fn pixels(&self) -> &Vec<Color>
     {
         &self.pixels
@@ -34,10 +44,10 @@ impl Buffer
 
     pub fn blackout(&mut self)
     {
-        self.pixels.iter_mut().for_each(|pix| *pix = 0xFF000000);
+        self.pixels.iter_mut().for_each(|pix| *pix = black());
     }
 
-    pub fn set_pixel(&mut self, x: usize, y: usize, data: Color)
+    pub fn place_pixel(&mut self, x: usize, y: usize, data: Color)
     {
         let (width, height): (usize, usize) = (self.width, self.height);
         let ytransformed: usize = self.height-1 - y;
@@ -46,4 +56,24 @@ impl Buffer
         }
         self.pixels[ytransformed * width + x] = data;
     }
+
+    pub fn inbounds(&self, x: usize, y: usize) -> bool
+    {
+        x < self.width && y < self.height
+    }
+}
+
+pub fn black() -> Color
+{
+    0xFF000000
+}
+
+pub fn cyan() -> Color
+{
+    0xFF00FFFF
+}
+
+pub fn red() -> Color
+{
+    0xFFFF2222
 }

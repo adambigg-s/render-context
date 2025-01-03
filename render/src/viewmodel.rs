@@ -175,6 +175,11 @@ pub fn idx_usize_isize(x: usize, y: usize, dx: isize, dy: isize) -> (usize, usiz
     ((x as isize + dx) as usize, (y as isize + dy) as usize)
 }
 
+pub fn delay(time: u64)
+{
+    std::thread::sleep(std::time::Duration::from_millis(50));
+}
+
 
 
 #[cfg(test)]

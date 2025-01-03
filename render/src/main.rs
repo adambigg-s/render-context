@@ -46,7 +46,6 @@ fn main()
     window.set_target_fps(FPS);
     let mut debug_buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
     let mut buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
-
     let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(-40.0, 0.0, 20.0));
 
     let mut renderer: Renderer = Renderer::cons(&viewmodel, &mut buffer);

@@ -51,12 +51,11 @@ impl Buffer
 
     pub fn place_pixel(&mut self, x: usize, y: usize, data: Color)
     {
-        let (width, height): (usize, usize) = (self.width, self.height);
         let ytransformed: usize = self.height-1 - y;
         {
-            debug_assert!(ytransformed * width + x < width * height);
+            debug_assert!(ytransformed * self.width + x < self.width * self.height);
         }
-        self.pixels[ytransformed * width + x] = data;
+        self.pixels[ytransformed * self.width + x] = data;
     }
 
     pub fn inbounds(&self, x: usize, y: usize) -> bool
@@ -70,7 +69,7 @@ pub fn color_tag(tag: u8) -> Color
     match tag {
         1 => 0xff00ffff, // cyan
         2 => 0xffff2222, // rusty red
-        3 => 0xffbbbbbb,
+        3 => 0xff666666,
         _ => 0xff000000, // black
     }
 }

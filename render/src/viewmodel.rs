@@ -69,18 +69,24 @@ impl Wall
 
 pub fn draw3d_point(viewmodel: &ViewModel, buffer: &mut Buffer, point: &Vec3<Float>)
 {
+    let (screen_x, screen_y) = world_to_screen(viewmodel, buffer, point);
+    draw_cluster(screen_x, screen_y, 2, color_tag(3), buffer);
+}
+
+pub fn world_to_screen(
+    viewmodel: &ViewModel, buffer: & Buffer, point: &Vec3<Float>
+) -> (usize, usize)
+{
     let view: Vec3<Float> = *point - viewmodel.position;
 
     let mut world: Vec3<Float> = view.rotation_z(viewmodel.rotation);
     world.z += (viewmodel.tilt as Float) * world.x / 32.0;
     
     let scale_factor = 100.0 / world.x;
-    let screen_x = world.y * scale_factor + buffer.halfwidth() as Float;
-    let screen_y = world.z * scale_factor + buffer.halfheight() as Float;
+    let screen_x = (world.y * scale_factor + buffer.halfwidth() as Float) as usize;
+    let screen_y = (world.z * scale_factor + buffer.halfheight() as Float) as usize;
 
-    let (sx, sy) = (screen_x as usize, screen_y as usize);
-
-    draw_cluster(sx, sy, 2, color_tag(3), buffer);
+    (screen_x, screen_y)
 }
 
 pub fn draw3d_wall(viewmodel: &ViewModel, buffer: &mut Buffer, wall: &Wall)
@@ -89,13 +95,59 @@ pub fn draw3d_wall(viewmodel: &ViewModel, buffer: &mut Buffer, wall: &Wall)
     let p2 = wall.edge2;
     let p3 = wall.edge1 + Vec3::cons(0.0, 0.0, wall.height);
     let p4 = wall.edge2 + Vec3::cons(0.0, 0.0, wall.height);
-    
-    let points = [p1, p2, p3, p4];
-    for point in &points {
-        draw3d_point(viewmodel, buffer, point);
+
+    let (x1, y1) = world_to_screen(viewmodel, buffer, &p1);
+    let (x2, y2) = world_to_screen(viewmodel, buffer, &p2);
+    let (x3, y3) = world_to_screen(viewmodel, buffer, &p3);
+    let (x4, y4) = world_to_screen(viewmodel, buffer, &p4);
+    draw_line(buffer, x1, y1, x2, y2);
+    draw_line(buffer, x3, y3, x4, y4);
+}
+
+pub fn draw_line(buffer: &mut Buffer, x1: usize, y1: usize, x2: usize, y2: usize)
+{
+    let dx = (x2 as isize - x1 as isize).abs();
+    let dy = -(y2 as isize - y1 as isize).abs();
+    let start_x = if x1 < x2 { 1 } else { -1 };
+    let start_y = if y1 < y2 { 1 } else { -1 };
+    let mut error = dx + dy;
+    let mut x = x1 as isize;
+    let mut y = y1 as isize;
+    loop {
+        if !buffer.inbounds(x as usize, y as usize) {
+            break;
+        }
+        buffer.place_pixel(x as usize, y as usize, color_tag(1));
+        if x == x2 as isize && y == y2 as isize {
+            break;
+        }
+        let doubleerror = 2 * error;
+        if doubleerror >= dy {
+            error += dy;
+            x += start_x;
+        }
+        if doubleerror <= dx {
+            error += dx;
+            y += start_y;
+        }
     }
 }
 
+pub fn draw_view(viewmodel: &ViewModel, buffer: &mut Buffer)
+{
+    draw_point(&viewmodel.position, buffer);
+
+    let (sin, cos): (Float, Float) = viewmodel.rotation.sin_cos();
+    let (sx, sy): (usize, usize) = (
+        (viewmodel.position.x + buffer.halfwidth() as Float) as usize,
+        (viewmodel.position.y + buffer.halfheight() as Float) as usize,
+    );
+    let (nx, ny): (usize, usize) = (
+        (sx as Float + 10.0 * cos) as usize,
+        (sy as Float + 10.0 * sin) as usize,
+    );
+    draw_line(buffer, sx, sy, nx, ny);
+}
 
 pub fn draw_point(point: &Vec3<Float>, buffer: &mut Buffer)
 {
@@ -103,22 +155,6 @@ pub fn draw_point(point: &Vec3<Float>, buffer: &mut Buffer)
     let sy: usize = (point.y + buffer.halfheight() as Float) as usize;
 
     draw_cluster(sx, sy, 3, color_tag(2), buffer);
-}
-
-pub fn draw_view(viewmodel: &ViewModel, buffer: &mut Buffer)
-{
-    let sx: usize = (viewmodel.position.x + buffer.halfwidth() as Float) as usize;
-    let sy: usize = (viewmodel.position.y + buffer.halfheight() as Float) as usize;
-    draw_cluster(sx, sy, 3, color_tag(1), buffer);
-
-    let (sin, cos): (Float, Float) = viewmodel.rotation.sin_cos();
-    (0..10).for_each(|len| {
-        let nx: usize = (sx as Float + len as Float * cos) as usize;
-        let ny: usize = (sy as Float + len as Float * sin) as usize;
-        if buffer.inbounds(nx, ny) {
-            buffer.place_pixel(nx, ny, color_tag(2));
-        }
-    });
 }
 
 pub fn draw_cluster(x: usize, y: usize, size: isize, color: Color, buffer: &mut Buffer)

@@ -1,0 +1,8 @@
+
+
+
+::for wall drawing::
+- make function that turns any point into screen coords
+- turn the two bottom points to screen cords and
+	- make another function to draw lines between arbitrary points
+- call line drawing function on two top and two bottom point sets

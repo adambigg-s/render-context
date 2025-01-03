@@ -15,6 +15,7 @@ use std::io::{stdout, Write};
 use math::{pi, Vec3};
 use buffer::Buffer;
 use viewmodel::{draw3d_point, draw3d_wall, draw_point, draw_view, ViewModel, Wall};
+use renderer::Renderer;
 
 
 
@@ -48,15 +49,17 @@ fn main()
 
     let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(-40.0, 0.0, 20.0));
 
+    let mut renderer: Renderer = Renderer::cons(&viewmodel, &mut buffer);
+
     let points: Vec<Vec3<Float>> = vec![
-        Vec3::cons(40.0, 50.0, 0.0),
-        Vec3::cons(40.0, -50.0, 0.0),
+        Vec3::cons(70.0, 120.0, 0.0),
+        Vec3::cons(70.0, -120.0, 0.0),
     ];
 
     let wall: Wall = Wall::cons(
-        Vec3::cons(40.0, 50.0, 0.0),
-        Vec3::cons(40.0, -50.0, 0.0),
-        10.0,
+        Vec3::cons(70.0, 120.0, 0.0),
+        Vec3::cons(70.0, -120.0, 0.0),
+        45.0,
     );
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
@@ -112,8 +115,8 @@ fn get_movement(view: &mut ViewModel, keys: Vec<Key>)
             Key::E => view.rotate(-1.0 / pi() / 3.0),
             Key::W => view.move_forward(1.0, 5.0),
             Key::S => view.move_forward(-1.0, 5.0),
-            Key::A => view.move_lateral(-1.0, 5.0),
-            Key::D => view.move_lateral(1.0, 5.0),
+            Key::A => view.move_lateral(1.0, 5.0),
+            Key::D => view.move_lateral(-1.0, 5.0),
             Key::R => view.tilt(-1),
             Key::F => view.tilt(1),
             _ => {},

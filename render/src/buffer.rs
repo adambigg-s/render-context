@@ -1,7 +1,9 @@
 
 
 
-pub type Color = u32;
+use crate::Color;
+
+
 
 pub struct Buffer
 {
@@ -68,6 +70,7 @@ pub fn color_tag(tag: u8) -> Color
     match tag {
         1 => 0xff00ffff, // cyan
         2 => 0xffff2222, // rusty red
+        3 => 0xffbbbbbb,
         _ => 0xff000000, // black
     }
 }

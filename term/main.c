@@ -15,8 +15,8 @@
 #define DELTA 1.2
 #define FRAME_DELAY 2
 #define CAMDISTANCE 175
-#define ROT_DELTA_X 0.1
-#define ROT_DELTA_Y 0.05
+#define ROT_DELTA_X 0.12
+#define ROT_DELTA_Y 0.07
 #define ROT_DELTA_Z 0.02
 
 

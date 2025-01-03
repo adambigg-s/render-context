@@ -88,6 +88,7 @@ fn main()
                 draw_point(&point, &mut debug_buffer);
             }
 
+            print!("\033[2J");
             print!("\r\x1B[2K");
             print!("x: {}, y: {}, z: {}, rot: {}, tilt: {}, sin: {}, cos: {}",
                 viewmodel.position.x,

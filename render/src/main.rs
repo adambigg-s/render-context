@@ -14,7 +14,7 @@ use std::io::{stdout, Write};
 
 use math::{pi, Vec3};
 use buffer::Buffer;
-use viewmodel::{draw3d_point, ViewModel, draw_point, draw_view};
+use viewmodel::{draw3d_point, draw3d_wall, draw_point, draw_view, ViewModel, Wall};
 
 
 
@@ -46,11 +46,18 @@ fn main()
     let mut debug_buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
     let mut buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
 
-    let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(-10.0, 0.0, 20.0));
+    let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(-40.0, 0.0, 20.0));
 
-    let mut points: Vec<Vec3<Float>> = Vec::new();
-    points.push(Vec3::cons(40.0, 10.0, 0.0));
-    points.push(Vec3::cons(40.0, -10.0, 0.0));
+    let points: Vec<Vec3<Float>> = vec![
+        Vec3::cons(40.0, 50.0, 0.0),
+        Vec3::cons(40.0, -50.0, 0.0),
+    ];
+
+    let wall: Wall = Wall::cons(
+        Vec3::cons(40.0, 50.0, 0.0),
+        Vec3::cons(40.0, -50.0, 0.0),
+        10.0,
+    );
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
         buffer.blackout();
@@ -58,6 +65,7 @@ fn main()
         for &point in &points {
             draw3d_point(&viewmodel, &mut buffer, &point);
         }
+        draw3d_wall(&viewmodel, &mut buffer, &wall);
 
         window.update_with_buffer(buffer.pixels(), buffer.width(), buffer.height()).unwrap();
 
@@ -106,8 +114,8 @@ fn get_movement(view: &mut ViewModel, keys: Vec<Key>)
             Key::S => view.move_forward(-1.0, 5.0),
             Key::A => view.move_lateral(-1.0, 5.0),
             Key::D => view.move_lateral(1.0, 5.0),
-            Key::R => view.tilt(1),
-            Key::F => view.tilt(-1),
+            Key::R => view.tilt(-1),
+            Key::F => view.tilt(1),
             _ => {},
         };
     });

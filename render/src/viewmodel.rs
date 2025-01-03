@@ -52,23 +52,50 @@ impl ViewModel
     }
 }
 
+pub struct Wall
+{
+    pub edge1: Vec3<Float>,
+    pub edge2: Vec3<Float>,
+    pub height: Float,
+}
+
+impl Wall
+{
+    pub fn cons(edge1: Vec3<Float>, edge2: Vec3<Float>, height: Float) -> Wall
+    {
+        Wall { edge1, edge2, height }
+    }
+}
+
 pub fn draw3d_point(viewmodel: &ViewModel, buffer: &mut Buffer, point: &Vec3<Float>)
 {
-    let (sin, cos): (Float, Float) = viewmodel.rotation.sin_cos();
     let view: Vec3<Float> = *point - viewmodel.position;
 
-    let world_x = view.x * cos - view.y * sin;
-    let world_y = view.y * cos + view.x * sin;
-    let world_z = view.z;
-    let scale_factor = 100.0 / world_x;
+    let mut world: Vec3<Float> = view.rotation_z(viewmodel.rotation);
+    world.z += (viewmodel.tilt as Float) * world.x / 32.0;
+    
+    let scale_factor = 100.0 / world.x;
+    let screen_x = world.y * scale_factor + buffer.halfwidth() as Float;
+    let screen_y = world.z * scale_factor + buffer.halfheight() as Float;
 
-    let sx = world_y * scale_factor + buffer.halfwidth() as Float;
-    let sy = world_z * scale_factor + buffer.halfheight() as Float;
+    let (sx, sy) = (screen_x as usize, screen_y as usize);
 
-    let (sx, sy) = (sx as usize, sy as usize);
-
-    draw_cluster(sx, sy, 4, color_tag(3), buffer);
+    draw_cluster(sx, sy, 2, color_tag(3), buffer);
 }
+
+pub fn draw3d_wall(viewmodel: &ViewModel, buffer: &mut Buffer, wall: &Wall)
+{
+    let p1 = wall.edge1;
+    let p2 = wall.edge2;
+    let p3 = wall.edge1 + Vec3::cons(0.0, 0.0, wall.height);
+    let p4 = wall.edge2 + Vec3::cons(0.0, 0.0, wall.height);
+    
+    let points = [p1, p2, p3, p4];
+    for point in &points {
+        draw3d_point(viewmodel, buffer, point);
+    }
+}
+
 
 pub fn draw_point(point: &Vec3<Float>, buffer: &mut Buffer)
 {

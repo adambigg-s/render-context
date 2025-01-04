@@ -21,24 +21,30 @@
 
 
 
-typedef struct Cube {
+typedef struct Cube
+{
     float width;
     float a, b, c;
     float buffer_z[WIDTH * HEIGHT];
     char buffer_screen[WIDTH * HEIGHT];
 } Cube;
 
-float euler_rotate_u(int i, int j, int k, Cube *cube) {
+float euler_rotate_u(int i, int j, int k, Cube* cube)
+{
     float a = cube->a, b = cube->b, c = cube->c;
-    return i * cos(b) * cos(c) + j * (sin(a) * sin(b) * cos(c) - cos(a) * sin(c)) + k * (cos(a) * sin(b) * cos(c) + sin(a) * sin(c));
+    return i * cos(b) * cos(c) + j * (sin(a) * sin(b) * cos(c) - cos(a) * sin(c))
+           + k * (cos(a) * sin(b) * cos(c) + sin(a) * sin(c));
 }
 
-float euler_rotate_v(int i, int j, int k, Cube *cube) {
+float euler_rotate_v(int i, int j, int k, Cube* cube)
+{
     float a = cube->a, b = cube->b, c = cube->c;
-    return i * cos(b) * sin(c) + j * (sin(a) * sin(b) * sin(c) + cos(a) * cos(c)) + k * (cos(a) * sin(b) * sin(c) - sin(a) * cos(c));
+    return i * cos(b) * sin(c) + j * (sin(a) * sin(b) * sin(c) + cos(a) * cos(c))
+           + k * (cos(a) * sin(b) * sin(c) - sin(a) * cos(c));
 }
 
-float euler_rotate_w(int i, int j, int k, Cube *cube) {
+float euler_rotate_w(int i, int j, int k, Cube* cube)
+{
     float a = cube->a, b = cube->b, c = cube->c;
     return i * (-sin(b)) + j * sin(a) * cos(b) + k * cos(a) * cos(b);
 }
@@ -48,7 +54,7 @@ char int_to_chr(int idx) {
     return chrs[idx];
 }
 
-void calculate_cube_surface(float cubex, float cubey, float cubez, char chr, Cube *cube) {
+void calculate_cube_surface(float cubex, float cubey, float cubez, char chr, Cube* cube) {
     float x = euler_rotate_u(cubex, cubey, cubez, cube);
     float y = euler_rotate_v(cubex, cubey, cubez, cube);
     float z = euler_rotate_w(cubex, cubey, cubez, cube) + CAMDISTANCE;
@@ -67,6 +73,11 @@ void calculate_cube_surface(float cubex, float cubey, float cubez, char chr, Cub
     }
 }
 
+void clear_buffers(Cube *cube) {
+    memset(cube->buffer_screen, int_to_chr(0), sizeof(cube->buffer_screen));
+    memset(cube->buffer_z, 0, sizeof(cube->buffer_z));
+}
+
 void render_cube(Cube *cube) {
     for (float cubex = -cube->width; cubex <= cube->width; cubex += DELTA) {
         for (float cubey = -cube->width; cubey <= cube->width; cubey += DELTA) {
@@ -78,11 +89,6 @@ void render_cube(Cube *cube) {
             calculate_cube_surface(cubex, cube->width, cubey, int_to_chr(6), cube);
         }
     }
-}
-
-void clear_buffers(Cube *cube) {
-    memset(cube->buffer_screen, int_to_chr(0), sizeof(cube->buffer_screen));
-    memset(cube->buffer_z, 0, sizeof(cube->buffer_z));
 }
 
 void display_frame(Cube *cube) {
@@ -99,7 +105,15 @@ void display_frame(Cube *cube) {
     printf("%s", frame_buffer);
 }
 
-int main() {
+void rotate_cube(Cube* cube)
+{
+    cube->a += ROT_DELTA_X;
+    cube->b += ROT_DELTA_Y;
+    cube->c += ROT_DELTA_Z;
+}
+
+int main()
+{
     Cube cube = {
         .width = CUBEWIDTH,
         .a = 0,
@@ -107,16 +121,16 @@ int main() {
         .c = 0,
     };
 
+    // ansi escape to clear terminal
     printf("\x1b[2J");
+    // ansi escape to make cursor-line invisible
+    printf("\033[?25l");
 
     while (1 == 1) {
         clear_buffers(&cube);
         render_cube(&cube);
         display_frame(&cube);
-
-        cube.a += ROT_DELTA_X;
-        cube.b += ROT_DELTA_Y;
-        cube.c += ROT_DELTA_Z;
+        rotate_cube(&cube);
 
         Sleep(FRAME_DELAY);
     }

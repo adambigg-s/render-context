@@ -8,16 +8,17 @@
 
 
 
-#define WIDTH 150
+#define WIDTH 240
 #define HEIGHT 60
-#define CUBEWIDTH 32
-#define SCALING_CONSTANT 80
+#define CUBEWIDTH 20
+#define SCALING_X 175
+#define SCALING_Y 100
 #define DELTA 1.0
-#define FRAME_DELAY 5
-#define CAMDISTANCE 175
-#define ROT_DELTA_X 0.04
-#define ROT_DELTA_Y 0.08
-#define ROT_DELTA_Z 0.08
+#define FRAME_DELAY 25
+#define CAMDISTANCE 200
+#define ROT_DELTA_X 0.01
+#define ROT_DELTA_Y 0.07
+#define ROT_DELTA_Z 0.02
 
 
 
@@ -50,7 +51,7 @@ float euler_rotate_w(int i, int j, int k, Cube* cube)
 }
 
 char int_to_chr(int idx) {
-    char chrs[] = {' ', '$', ',', '.', '~', '>', '|'};
+    char chrs[] = {' ', '$', ',', '!', '~', '>', '|'};
     return chrs[idx];
 }
 
@@ -59,18 +60,18 @@ void calculate_cube_surface(float cubex, float cubey, float cubez, char chr, Cub
     float y = euler_rotate_v(cubex, cubey, cubez, cube);
     float z = euler_rotate_w(cubex, cubey, cubez, cube) + CAMDISTANCE;
 
-    float depth_multiplier = 1 / z * SCALING_CONSTANT;
-    int xp = (int)((float)WIDTH / 2 + depth_multiplier * x);
-    int yp = (int)((float)HEIGHT / 2 - depth_multiplier * y);
+    float inv_z = 1 / z;
+    float depth_multiplier_x = SCALING_X * inv_z;
+    float depth_multiplier_y = SCALING_Y * inv_z;
+    int xp = (int)((float)WIDTH / 2 + depth_multiplier_x * x);
+    int yp = (int)((float)HEIGHT / 2 - depth_multiplier_y * y);
 
-    if (depth_multiplier <= 0) return;
-
-    int idx = yp * WIDTH + xp;
-    if (idx >= 0 && idx < WIDTH * HEIGHT &&
-        depth_multiplier > cube->buffer_z[idx]) {
-        cube->buffer_z[idx] = depth_multiplier;
-        cube->buffer_screen[idx] = chr;
-    }
+     int idx = yp * WIDTH + xp;
+     if (z <= 0) return;
+     if (idx >= 0 && idx < WIDTH * HEIGHT && inv_z > cube->buffer_z[idx]) {
+         cube->buffer_z[idx] = inv_z;
+         cube->buffer_screen[idx] = chr;
+     }
 }
 
 void clear_buffers(Cube *cube) {

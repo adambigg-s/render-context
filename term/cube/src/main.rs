@@ -6,7 +6,7 @@ const HEIGHT: usize = 60;
 const CUBE_WIDTH: Float = 25.0;
 const DEPTHSCALINGX: Float = 175.0;
 const DEPTHSCALINGY: Float = 100.0;
-const DELTA: Float = 0.9;
+const DELTA: Float = 1.1;
 const FRAME_DELAY: u64 = 10;
 const DISTANCE: Float = 200.0;
 const ROTX: Float = 0.01;
@@ -94,8 +94,9 @@ impl Buffer {
     }
 
     fn to_str(&self) -> String {
-        let mut string = String::with_capacity(self.width * self.height);
+        let mut string = String::new();
         self.visual.iter().enumerate().for_each(|(idx, ele)| {
+            string.push_str("\x1b[2m");
             if idx % self.width != 0 {
                 string.push(*ele);
             }
@@ -168,6 +169,9 @@ impl<'d> RenderContext<'d> {
     }
 }
 
+#[inline]
+pub fn dump<Any>(_thing: Any) {}
+
 fn intchr(int: u8) -> char {
     match int {
         0 => ' ',
@@ -191,11 +195,10 @@ fn main() {
     print!("\x1b[?25l");
 
     loop {
-        {
-            let mut renderer = RenderContext::cons(&cube, &mut buffer);
-            renderer.render_cube();
-            renderer.buffer.display();
-        }
+        let mut renderer = RenderContext::cons(&cube, &mut buffer);
+        renderer.render_cube();
+        renderer.buffer.display();
+        dump(renderer);
         cube.rotate();
         std::thread::sleep(std::time::Duration::from_millis(FRAME_DELAY));
     }

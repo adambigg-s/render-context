@@ -59,7 +59,15 @@ float euler_rotate_w(int i, int j, int k, Cube* cube)
 }
 
 char intchr(int idx) {
-    char chrs[] = {' ', '$', ',', '!', '~', '>', '|'};
+    char chrs[] = {
+        ' ',
+        '$',
+        ',',
+        '!',
+        '~',
+        '>',
+        '|'
+    };
     return chrs[idx];
 }
 

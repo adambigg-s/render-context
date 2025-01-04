@@ -1,0 +1,35 @@
+:: cursor positioning::
+\x1b[{line};{column}H - Move cursor to line {line} and column {column}
+\x1b[{line}A - Move cursor up {line} lines
+\x1b[{line}B - Move cursor down {line} lines
+\x1b[{column}C - Move cursor right {column} columns
+\x1b[{column}D - Move cursor left {column} columns
+
+::screen manipulation::
+\x1b[2J - Clear entire screen
+\x1b[K - Clear from cursor to end of line
+\x1b[1J - Clear screen from cursor to beginning
+\x1b[0J - Clear screen from cursor to end
+
+::cursor::
+\x1b[?25l - Hide cursor
+\x1b[?25h - Show cursor
+
+::text formatting::
+\x1b[1m - Bold text (or increased intensity)
+\x1b[2m - Dim text (or decreased intensity)
+\x1b[3m - Italic text
+\x1b[4m - Underline text
+\x1b[5m - Blink text
+\x1b[7m - Reverse video (swap foreground and background)
+\x1b[8m - Hidden (not visible)
+\x1b[9m - Strike-through
+\x1b[22m - Reset bold/dim
+\x1b[23m - Reset italic
+\x1b[24m - Reset underline
+\x1b[25m - Reset blink
+\x1b[27m - Reset reverse video
+\x1b[28m - Reset hidden
+\x1b[29m - Reset strike-through
+\x1b[0m - Reset all attributes to their defaults
+\x1b[{code}m - General color formatting 

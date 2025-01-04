@@ -1,111 +1,76 @@
 
 
 
-const CUBE_WIDTH: Float = 10.0;
-const WIDTH: usize = 100;
-const HEIGHT: usize = 40;
-const DISTANCE: Float = 200.0;
-const ROTX: Float = 0.05;
-const ROTY: Float = 0.05;
-const ROTZ: Float = 0.05;
+const WIDTH: usize = 200;
+const HEIGHT: usize = 60;
+const CUBE_WIDTH: Float = 25.0;
 const DEPTHSCALINGX: Float = 175.0;
 const DEPTHSCALINGY: Float = 100.0;
-const SLEEP_DURATION: u64 = 25;
-const DELTA: Float = 1.0;
+const DELTA: Float = 0.9;
+const FRAME_DELAY: u64 = 10;
+const DISTANCE: Float = 200.0;
+const ROTX: Float = 0.01;
+const ROTY: Float = 0.04;
+const ROTZ: Float = 0.005;
 
 
 
 type Float = f32;
-type Int = i32;
 
-fn main() {
-    let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let mut cube = Cube::cons(CUBE_WIDTH, 0.0, 0.0, 0.0, &mut buffer);
+struct Tri {
+    x: Float,
+    y: Float,
+    z: Float,
+}
 
-    print!("\x1b[2J");
-    print!("\x1b[?25l");
-
-    loop {
-        cube.render_cube();
-        cube.buffer.display();
-        cube.rotate();
-        print!("\x1b[H");
-        print!("\x1b[2J");
-        std::thread::sleep(std::time::Duration::from_millis(SLEEP_DURATION));
+impl Tri {
+    fn cons(x: Float, y: Float, z: Float) -> Tri {
+        Tri { x, y, z }
     }
 }
 
-struct Cube<'d> {
-    width: Float,
+struct Cube {
+    sidelen: Float,
     a: Float,
     b: Float,
     c: Float,
-    buffer: &'d mut Buffer,
+    rotspeed: Tri,
 }
 
-impl<'d> Cube<'d> {
-    fn cons(width: Float, a: Float, b: Float, c: Float, buffer: &'d mut Buffer) -> Cube<'d> {
-        Cube { width, a, b, c, buffer }
+impl Cube {
+    fn cons(sidelen: Float, rotspeed: Tri) -> Cube {
+        Cube{ sidelen, a: 0.0, b: 0.0, c: 0.0, rotspeed }
     }
 
-    fn render_cube(&mut self) {
-        // let width = self.width.round() as Int;
-        // for x in -width..=width {
-        //     for y in -width..width {
-        //         let (x, y) = (x as Float, y as Float);
-        //         self.surface(x, y, -self.width, int_to_chr(1));
-        //         self.surface(self.width, y, x, int_to_chr(2));
-        //         self.surface(-self.width, y, x, int_to_chr(3));
-        //         self.surface(-x, y, self.width, int_to_chr(4));
-        //         self.surface(x, -self.width, -y, int_to_chr(5));
-        //         self.surface(x, self.width, y, int_to_chr(6));
-        //     }
-        // }
-        let mut x = -self.width;
-        while x < self.width {
-            let mut y = -self.width;
-            while y < self.width {
-                self.surface(x, y, -self.width, int_to_chr(1));
-                self.surface(self.width, y, x, int_to_chr(2));
-                self.surface(-self.width, y, x, int_to_chr(3));
-                self.surface(-x, y, self.width, int_to_chr(4));
-                self.surface(x, -self.width, -y, int_to_chr(5));
-                self.surface(x, self.width, y, int_to_chr(6));
-                y += DELTA;
-            }
-            x += DELTA;
-        }
+    fn euler_rotate_u(&self, i: Float, j: Float, k: Float) -> Float {
+        let (a, b, c) = (self.a, self.b, self.c);
+        i * b.cos() * c.cos()
+            + j * (a.sin() * b.sin() * c.cos()
+                - a.cos() * c.sin())
+            + k * (a.cos() * b.sin() * c.cos()
+                + a.sin() * c.sin())
     }
 
-    fn surface(&mut self, x: Float, y: Float, z: Float, chr: char) {
-        // let x = rotatex(x, y, z, self);
-        // let y = rotatey(x, y, z, self);
-        // let z = rotatez(x, y, z, self) + DISTANCE;
+    fn euler_rotate_v(&self, i: Float, j: Float, k: Float) -> Float {
+        let (a, b, c) = (self.a, self.b, self.c);
+        i * b.cos() * c.sin()
+            + j * (a.sin() * b.sin() * c.sin()
+                + a.cos() * c.cos())
+            + k * (a.cos() * b.sin() * c.sin()
+                - a.sin() * c.cos())
+    }
 
-        let x = euler_rotate_u(x, y, z, self);
-        let y = euler_rotate_v(x, y, z, self);
-        let z = euler_rotate_w(x, y, z, self) + DISTANCE;
-
-        let invz = 1.0 / z;
-        let multx = DEPTHSCALINGX * invz;
-        let multy = DEPTHSCALINGY * invz;
-        let xp = (self.buffer.width / 2) as Float + multx * x;
-        let yp = (self.buffer.height / 2) as Float - multy * y;
-
-        if z <= 0.0 { return; }
-
-        if let Some(idx) = self.buffer.idx(xp as usize, yp as usize) {
-            if invz > self.buffer.zbuffer[idx] {
-                self.buffer.zbuffer[idx] = invz;
-                self.buffer.visual[idx] = chr;
-            }
-        }
+    fn euler_rotate_w(&self, i: Float, j: Float, k: Float) -> Float {
+        let (a, b) = (self.a, self.b);
+        i * -(b.sin())
+            + j * a.sin() * b.cos()
+            + k * a.cos() * b.cos()
     }
 
     fn rotate(&mut self) {
-        self.a += ROTX;
-        self.b += ROTY;
-        self.c += ROTZ;
+        self.a += self.rotspeed.x;
+        self.b += self.rotspeed.y;
+        self.c += self.rotspeed.z;
     }
 }
 
@@ -118,62 +83,92 @@ struct Buffer {
 
 impl Buffer {
     fn cons(height: usize, width: usize) -> Buffer {
-        let visual = vec![int_to_chr(0); width * height];
+        let visual = vec![intchr(0); width * height];
         let zbuffer = vec![0.0; width * height];
         Buffer { visual, zbuffer, height, width }
     }
 
+    fn clear(&mut self) {
+        self.visual.fill(intchr(0));
+        self.zbuffer.fill(0.0);
+    }
+
     fn to_str(&self) -> String {
-        let mut string = String::new();
-        for idx in 0..self.visual.len() {
-            if idx % WIDTH != 0 {
-                string.push(self.visual[idx]);
-                continue;
+        let mut string = String::with_capacity(self.width * self.height);
+        self.visual.iter().enumerate().for_each(|(idx, ele)| {
+            if idx % self.width != 0 {
+                string.push(*ele);
             }
-            string.push('\n');
-        }
+            else {
+                string.push('\n');
+            }
+        });
         string
     }
-    
+
     fn display(&mut self) {
+        // ansi escape to move cursor-line to beginning
         print!("\x1b[H");
         println!("{}", self.to_str());
         self.clear();
     }
 
-    fn clear(&mut self) {
-        self.visual.iter_mut().for_each(|ele| *ele = int_to_chr(0));
-        self.zbuffer.iter_mut().for_each(|ele| *ele = 0.0);
+    fn idx(&self, x: usize, y: usize) -> usize {
+        y * self.width + x
     }
 
-    fn idx(&self, x: usize, y: usize) -> Option<usize> {
-        let newdex = y * self.width + x;
-        if newdex < self.width * self.height {
-            Some(newdex)
-        } else {
-            None
+    fn inbounds(&self, idx: usize) -> bool {
+        idx < self.width * self.height
+    }
+}
+
+struct RenderContext<'d> {
+    cube: &'d Cube,
+    buffer: &'d mut Buffer,
+}
+
+impl<'d> RenderContext<'d> {
+    fn cons(cube: &'d Cube, buffer: &'d mut Buffer) -> RenderContext<'d> {
+        RenderContext { cube, buffer }
+    }
+    
+    fn render_cube(&mut self) {
+        let mut cubex = -self.cube.sidelen;
+        while cubex < self.cube.sidelen {
+            let mut cubey = -self.cube.sidelen;
+            while cubey < self.cube.sidelen {
+                self.surface(cubex, cubey, -self.cube.sidelen, intchr(1));
+                self.surface(self.cube.sidelen, cubey, cubex, intchr(2));
+                self.surface(-self.cube.sidelen, cubey, cubex, intchr(3));
+                self.surface(-cubex, cubey, self.cube.sidelen, intchr(4));
+                self.surface(cubex, -self.cube.sidelen, -cubey, intchr(5));
+                self.surface(cubex, self.cube.sidelen, cubey, intchr(6));
+                cubey += DELTA;
+            }
+            cubex += DELTA;
+        }
+    }
+
+    fn surface(&mut self, cubex: Float, cubey: Float, cubez: Float, chr: char) {
+        let x = self.cube.euler_rotate_u(cubex, cubey, cubez);
+        let y = self.cube.euler_rotate_v(cubex, cubey, cubez);
+        let z = self.cube.euler_rotate_w(cubex, cubey, cubez) + DISTANCE;
+
+        let invz = 1.0 / z;
+        let multx = DEPTHSCALINGX * invz;
+        let multy = DEPTHSCALINGY * invz;
+        let xp = ((self.buffer.width / 2) as Float + multx * x) as usize;
+        let yp = ((self.buffer.height / 2) as Float - multy * y) as usize;
+
+        let idx = self.buffer.idx(xp, yp);
+        if self.buffer.inbounds(idx) && invz > self.buffer.zbuffer[idx] {
+            self.buffer.zbuffer[idx] = invz;
+            self.buffer.visual[idx] = chr;
         }
     }
 }
 
-fn rotatex(i: Float, j: Float, k: Float, cube: &Cube) -> Float {
-    let (a, b, c) = (cube.a, cube.b, cube.c);
-    i * b.cos() * c.cos() + j * (a.sin() * b.sin() * c.cos() - a.cos() * c.sin())
-        + k * (a.cos() * b.sin() * c.cos() + a.sin() * c.sin())
-}
-
-fn rotatey(i: Float, j: Float, k: Float, cube: &Cube) -> Float {
-    let (a, b, c) = (cube.a, cube.b, cube.c);
-    i * b.cos() * c.sin() + j * (a.sin() * b.sin() * c.sin() + a.cos() * c.cos())
-        + k * (a.cos() * b.sin() * c.sin() - a.sin() * c.cos())
-}
-
-fn rotatez(i: Float, j: Float, k: Float, cube: &Cube) -> Float {
-    let (a, b) = (cube.a, cube.b);
-    i * -(b.sin()) + j * a.sin() * b.cos() + k * a.cos() * b.cos()
-}
-
-fn int_to_chr(int: u8) -> char {
+fn intchr(int: u8) -> char {
     match int {
         0 => ' ',
         1 => '$',
@@ -186,27 +181,23 @@ fn int_to_chr(int: u8) -> char {
     }
 }
 
-fn euler_rotate_u(i: f32, j: f32, k: f32, cube: &Cube) -> f32 {
-    let a = cube.a;
-    let b = cube.b;
-    let c = cube.c;
-    i * b.cos() * c.cos()
-        + j * (a.sin() * b.sin() * c.cos() - a.cos() * c.sin())
-        + k * (a.cos() * b.sin() * c.cos() + a.sin() * c.sin())
-}
+fn main() {
+    let mut buffer = Buffer::cons(HEIGHT, WIDTH);
+    let mut cube = Cube::cons(CUBE_WIDTH, Tri::cons(ROTX, ROTY, ROTZ));
 
-fn euler_rotate_v(i: f32, j: f32, k: f32, cube: &Cube) -> f32 {
-    let a = cube.a;
-    let b = cube.b;
-    let c = cube.c;
-    i * b.cos() * c.sin()
-        + j * (a.sin() * b.sin() * c.sin() + a.cos() * c.cos())
-        + k * (a.cos() * b.sin() * c.sin() - a.sin() * c.cos())
-}
+    // ansi escape to clear terminal
+    print!("\x1b[2J");
+    // ansi escape to make cursor-line invisible for program
+    print!("\x1b[?25l");
 
-fn euler_rotate_w(i: f32, j: f32, k: f32, cube: &Cube) -> f32 {
-    let a = cube.a;
-    let b = cube.b;
-    i * (-b.sin()) + j * a.sin() * b.cos() + k * a.cos() * b.cos()
+    loop {
+        {
+            let mut renderer = RenderContext::cons(&cube, &mut buffer);
+            renderer.render_cube();
+            renderer.buffer.display();
+        }
+        cube.rotate();
+        std::thread::sleep(std::time::Duration::from_millis(FRAME_DELAY));
+    }
 }
 

@@ -27,4 +27,4 @@
 *.out   binary
 *.app   binary
 
-*.rs linguist-language=C
+*.rs linguist-language=C++

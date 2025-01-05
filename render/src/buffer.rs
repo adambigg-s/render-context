@@ -87,6 +87,14 @@ impl Buffer {
         }
     }
 
+    pub fn draw_vertical(&mut self, startx: usize, starty: usize, height: usize) {
+        (0..height).for_each(|dy| {
+            if self.inbounds(startx, starty + dy) {
+                self.place_pixel(startx, starty + dy, 0xff00ffff);
+            }
+        })
+    }
+
     pub fn inbounds(&self, x: usize, y: usize) -> bool {
         x < self.width && y < self.height
     }
@@ -97,6 +105,7 @@ pub fn color_tag(tag: u8) -> Color {
         1 => 0xff00ffff, // cyan
         2 => 0xffff2222, // rusty red
         3 => 0xff666666,
+        4 => 0xffff4444, // brighter red
         _ => 0xff000000, // black
     }
 }

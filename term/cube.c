@@ -10,7 +10,7 @@
 
 #define WIDTH 200
 #define HEIGHT 60
-#define CUBEWIDTH 25
+#define CUBEWIDTH 27
 #define SCALING_X 175
 #define SCALING_Y 100
 #define DELTA 0.9
@@ -22,16 +22,14 @@
 
 
 
-typedef struct Cube
-{
+typedef struct Cube {
     float sidelen;
     float a, b, c;
     float buffer_z[WIDTH * HEIGHT];
     char buffer_screen[WIDTH * HEIGHT];
 } Cube;
 
-float euler_rotate_u(int i, int j, int k, Cube* cube)
-{
+float euler_rotate_u(int i, int j, int k, Cube* cube) {
     float a = cube->a, b = cube->b, c = cube->c;
     return i * cos(b) * cos(c)
            + j * (sin(a) * sin(b) * cos(c)
@@ -40,8 +38,7 @@ float euler_rotate_u(int i, int j, int k, Cube* cube)
                   + sin(a) * sin(c));
 }
 
-float euler_rotate_v(int i, int j, int k, Cube* cube)
-{
+float euler_rotate_v(int i, int j, int k, Cube* cube) {
     float a = cube->a, b = cube->b, c = cube->c;
     return i * cos(b) * sin(c)
            + j * (sin(a) * sin(b) * sin(c)
@@ -50,8 +47,7 @@ float euler_rotate_v(int i, int j, int k, Cube* cube)
                   - sin(a) * cos(c));
 }
 
-float euler_rotate_w(int i, int j, int k, Cube* cube)
-{
+float euler_rotate_w(int i, int j, int k, Cube* cube) {
     float a = cube->a, b = cube->b, c = cube->c;
     return i * (-sin(b))
            + j * sin(a) * cos(b)
@@ -122,15 +118,13 @@ void display_frame(Cube* cube) {
     printf("%s", frame_buffer);
 }
 
-void rotate_cube(Cube* cube)
-{
+void rotate_cube(Cube* cube) {
     cube->a += ROT_DELTA_X;
     cube->b += ROT_DELTA_Y;
     cube->c += ROT_DELTA_Z;
 }
 
-int main()
-{
+int main() {
     Cube cube = {
         .sidelen = CUBEWIDTH,
         .a = 0,

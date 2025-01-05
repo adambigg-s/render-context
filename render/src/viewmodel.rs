@@ -11,8 +11,8 @@ impl ViewModel {
     pub fn cons(position: Vec3<Float>) -> ViewModel {
         ViewModel {
             position,
-            rotation: Float::default(),
-            tilt: Int::default(),
+            rotation: 0.0,
+            tilt: 0,
         }
     }
 

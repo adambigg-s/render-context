@@ -1,21 +1,24 @@
-:: cursor positioning::
+
+
+
+:: cursor positioning ::
 \x1b[{line};{column}H - Move cursor to line {line} and column {column}
 \x1b[{line}A - Move cursor up {line} lines
 \x1b[{line}B - Move cursor down {line} lines
 \x1b[{column}C - Move cursor right {column} columns
 \x1b[{column}D - Move cursor left {column} columns
 
-::screen manipulation::
+:: screen manipulation ::
 \x1b[2J - Clear entire screen
 \x1b[K - Clear from cursor to end of line
 \x1b[1J - Clear screen from cursor to beginning
 \x1b[0J - Clear screen from cursor to end
 
-::cursor::
+:: cursor ::
 \x1b[?25l - Hide cursor
 \x1b[?25h - Show cursor
 
-::text formatting::
+:: text formatting ::
 \x1b[1m - Bold text (or increased intensity)
 \x1b[2m - Dim text (or decreased intensity)
 \x1b[3m - Italic text

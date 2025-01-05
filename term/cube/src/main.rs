@@ -3,10 +3,10 @@
 
 const WIDTH: usize = 200;
 const HEIGHT: usize = 60;
-const CUBE_WIDTH: Float = 25.0;
+const CUBE_WIDTH: Float = 27.0;
 const DEPTHSCALINGX: Float = 175.0;
 const DEPTHSCALINGY: Float = 100.0;
-const DELTA: Float = 1.1;
+const DELTA: Float = 0.9;
 const FRAME_DELAY: u64 = 10;
 const DISTANCE: Float = 200.0;
 const ROTX: Float = 0.01;

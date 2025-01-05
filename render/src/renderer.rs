@@ -16,18 +16,17 @@ impl<'d> Renderer<'d> {
 
     pub fn draw3d_point(&mut self, point: &Vec3<Float>) {
         let (screen_x, screen_y) = self.world_to_screen(point);
-        self.buffer
-            .draw_cluster(screen_x, screen_y, 2, color_tag(3));
+        self.buffer.draw_cluster(screen_x, screen_y, 3, color_tag(4));
     }
 
     pub fn world_to_screen(&mut self, point: &Vec3<Float>) -> (usize, usize) {
         let view: Vec3<Float> = *point - self.viewmodel.position;
 
-        let mut world: Vec3<Float> = view.rotation_z(self.viewmodel.rotation);
+        let mut world: Vec3<Float> = view.rotation_z(-self.viewmodel.rotation);
         world.z += (self.viewmodel.tilt as Float) * world.x / 32.0;
 
         let scale_factor = 200.0 / world.x;
-        let screen_x = (world.y * scale_factor + self.buffer.halfwidth() as Float) as usize;
+        let screen_x = (-world.y * scale_factor + self.buffer.halfwidth() as Float) as usize;
         let screen_y = (world.z * scale_factor + self.buffer.halfheight() as Float) as usize;
 
         (screen_x, screen_y)

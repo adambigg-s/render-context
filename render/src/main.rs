@@ -49,10 +49,12 @@ fn main() {
 
     let mut debug_buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
     let mut buffer: Buffer = Buffer::cons(HEIGHT, WIDTH);
-    let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(-40.0, 0.0, 20.0));
+    let mut viewmodel: ViewModel = ViewModel::cons(Vec3::cons(0.0, 0.0, 10.0));
 
-    let points: Vec<Vec3<Float>> =
-        vec![Vec3::cons(70.0, 120.0, 0.0), Vec3::cons(70.0, -120.0, 0.0), Vec3::cons(20.0, 20.0, 0.0)];
+    let points: Vec<Vec3<Float>> = vec![
+        Vec3::cons(70.0, 120.0, 0.0), Vec3::cons(70.0, -120.0, 0.0), Vec3::cons(20.0, 20.0, 0.0),
+        Vec3::cons(40.0, 20.0, 3.0),
+    ];
 
     let wall: Wall = Wall::cons(
         points[0],

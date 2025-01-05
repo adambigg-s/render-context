@@ -28,6 +28,7 @@ pub fn delay(time: u64) {
 }
 
 #[inline]
+#[allow(dead_code)]
 pub fn dump<Any>(_thing: Any) {}
 
 pub fn get_movement(view: &mut ViewModel, keys: Vec<Key>) {

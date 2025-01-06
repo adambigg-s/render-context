@@ -18,6 +18,8 @@
 *.dylib binary
 *.dll   binary
 
+*.rs linguist-language=C++
+
 *.la    binary
 *.a     binary
 *.lib   binary
@@ -25,7 +27,3 @@
 *.exe   binary
 *.out   binary
 *.app   binary
-
-*.rs linguist-language=C++
-
-

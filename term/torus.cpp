@@ -9,24 +9,24 @@
 
 
 #define MAJORRAD 50
-#define MINORRAD 20
+#define MINORRAD 25
 #define HEIGHT 60
-#define WIDTH 220
+#define WIDTH 240
 #define FRAMEDELAY 5
 #define ROTX 0.04
 #define ROTY 0.07
 #define ROTZ 0.02
 #define THETADELTA 0.1
-#define PHIDELTA 0.05
+#define PHIDELTA 0.03
 #define SCALINGX 80
 #define SCALINGY 60
-#define VIEWDISTANCE 200
+#define VIEWDISTANCE 250
 
 
 
 const float TAU = 6.28319;
 const float LIGHT[] = {-2, 3, 3};
-const char GRAD[] = ".,:;+*?%#@";
+const char GRAD[] = ".,:;+**?%%#@@";
 const char BACKGROUND = ' ';
 
 typedef struct Vec3 {
@@ -111,10 +111,12 @@ public:
                 if (this->colored[i] && this->visual[i] != BACKGROUND) {
                     frame_buffer += "\x1b[38;2;89;44;4m";
                     frame_buffer += "\x1b[1m";
+                    frame_buffer += "\x1b[40m";
                 }
                 else if (this->visual[i] != BACKGROUND) {
                     frame_buffer += "\x1b[38;2;173;158;95m";
                     frame_buffer += "\x1b[1m";
+                    frame_buffer += "\x1b[40m";
                 }
                 else  {
                     frame_buffer += "\x1b[0m";
@@ -126,6 +128,7 @@ public:
         }
         frame_buffer += "\x1b[0m";
         std::cout << frame_buffer;
+        std::cout.flush();
     }
 
     const int halfheight() {
@@ -140,8 +143,8 @@ public:
         return y * this->width + x;
     }
 
-    const bool inbounds(int idx) {
-        return idx < this->width * this->height;
+    const bool inbounds(int x, int y) {
+        return x < this->width && y < this->height;
     }
 
     void clear() {
@@ -216,7 +219,7 @@ void render_torus(Buffer* buffer, Torus* torus) {
             int yp = (int)(buffer->halfheight() + modifiery * y);
 
             int idx = buffer->index(xp, yp);
-            if (buffer->inbounds(idx) && invz > buffer->zbuffer[idx]) {
+            if (buffer->inbounds(xp, yp) && invz > buffer->zbuffer[idx]) {
                 float luminosity = normal.dot_prod(get_light());
                 char chr = brightness_char(luminosity);
                 buffer->visual[idx] = chr;

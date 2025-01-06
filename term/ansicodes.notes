@@ -36,3 +36,5 @@
 \x1b[29m - Reset strike-through
 \x1b[0m - Reset all attributes to their defaults
 \x1b[{code}m - General color formatting 
+\x1b[48;2;{r};{g};{b}m - Format text background color
+\x1b[38;2;{r};{g};{b}m - Format text foreground color

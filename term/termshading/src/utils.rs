@@ -23,7 +23,7 @@ pub fn sleep(time: u64) {
 
 pub fn get_user_input() -> Vec<char> {
     let mut inputs = Vec::new();
-    if let Ok(true) = event::poll(Duration::from_millis(1)) {
+    if let Ok(true) = event::poll(Duration::from_millis(100)) {
         if let Ok(Event::Key(key_event)) = event::read() {
             match key_event.code {
                 KeyCode::Char('w') => inputs.push('w'),

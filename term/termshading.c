@@ -60,5 +60,6 @@ typedef struct ViewModel {
 } Viewmodel;
 
 int main() {
+    printf("null");
     return 0;
 }

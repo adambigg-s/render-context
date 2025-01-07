@@ -60,8 +60,8 @@ typedef struct Vec3 {
     const Vec3 rotationchain(Vec3 angles) {
         float nx = this->x, ny = this->y, nz = this->z;
         Vec3 vec = Vec3::cons(nx, ny, nz);
-        vec = vec.rotationy(angles.y);
         vec = vec.rotationx(angles.x);
+        vec = vec.rotationy(angles.y);
         vec = vec.rotationz(angles.z);
         return vec;
     }

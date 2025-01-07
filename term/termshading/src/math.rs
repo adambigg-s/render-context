@@ -2,7 +2,7 @@
 
 
 
-use std::ops::{Add, Sub};
+use std::ops::{Add, Mul, Sub};
 
 use crate::Float;
 
@@ -70,6 +70,13 @@ impl Add for Vec3 {
     type Output = Vec3;
     fn add(self, other: Vec3) -> Self::Output {
         Vec3::cons(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
+impl Mul<Float> for Vec3 {
+    type Output = Vec3;
+    fn mul(self, rhs: Float) -> Vec3 {
+        Vec3::cons(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
 

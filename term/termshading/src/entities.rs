@@ -1,7 +1,7 @@
 
 
 
-use crate::renderer::TextureData;
+use crate::renderer::{Color, TextureData};
 use crate::{Float, PI, TAU};
 use crate::math::Vec3;
 
@@ -37,13 +37,14 @@ impl ViewModel {
     }
 
     fn translate(&mut self, dir: Vec3) {
-        let mut transdir = dir;
+        let speed = 2.0;
+        let mut transdir = dir * speed;
         transdir.rotatez(self.rot);
         self.pos = self.pos + transdir;
     }
 
     fn rotate(&mut self, dir: Float) {
-        let speed = PI / 100.0;
+        let speed = PI / 75.0;
         self.rot += dir * speed;
         if self.rot < 0.0 {
             self.rot += TAU;
@@ -54,7 +55,7 @@ impl ViewModel {
     }
 
     fn tilt(&mut self, dir: Float) {
-        let speed = PI / 100.0;
+        let speed = PI / 75.0;
         self.tilt += dir * speed;
         self.tilt = self.tilt.clamp(-PI / 2.0, PI / 2.0);
     }
@@ -64,17 +65,18 @@ pub struct Sphere {
     pub loc: Vec3,
     pub rad: Float,
     pub texture: Option<TextureData>,
+    pub color: Color,
 }
 
 impl Sphere {
-    pub fn cons(loc: Vec3, rad: Float, texpath: Option<&str>) -> Sphere {
+    pub fn cons(loc: Vec3, rad: Float, texpath: Option<&str>, color: Color) -> Sphere {
         let texture;
         if let Some(path) = texpath {
             texture = Some(TextureData::from(path));
         } else {
             texture = None;
         }
-        Sphere { loc, rad, texture }
+        Sphere { loc, rad, texture, color }
     }
 }
 

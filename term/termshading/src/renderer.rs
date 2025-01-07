@@ -33,7 +33,7 @@ impl<'d> Renderer<'d> {
         let distance = self.sphere_distance_square(sphere).sqrt() - sphere.rad;
         let delta = (distance / (sphere.rad * 200.0)).max(0.0075);
         let (thetadelta, phidelta) = (delta, delta * 2.0);
-        let (scalingx, scalingy) = (100.0, 50.0);
+        let (scalingx, scalingy) = (100.0, 48.0);
         let thetastep = (TAU / thetadelta) as Int;
         let phistep = (PI / phidelta) as Int;
 
@@ -65,25 +65,11 @@ impl<'d> Renderer<'d> {
                     if invx < self.buffer.depth[idx] { continue; }
                     let mut normal = worldframe - sphere.loc;
                     normal.normalize();
-                    // self.buffer.visual[idx] = self.luminosity_char(&normal);
-                    // self.buffer.visual[idx] = self.map_texture(theta, phi, sphere);
                     let mut color = self.map_texture(theta, phi, sphere);
                     let lumin = self.luminosity(&normal);
                     color.lighting(lumin);
                     self.buffer.color[idx] = Some(color);
                     self.buffer.depth[idx] = invx;
-                    // if self.buffer.visual[idx] == ' ' {
-                    //     let mut color = Color::cons(10, 100, 250);
-                    //     let lumin = self.luminosity(&normal);
-                    //     color.lighting(lumin);
-                    //     self.buffer.color[idx] = Some(color);
-                    // }
-                    // else {
-                    //     let mut color = Color::cons(10, 70, 10);
-                    //     let lumin = self.luminosity(&normal);
-                    //     color.lighting(lumin);
-                    //     self.buffer.color[idx] = Some(color);
-                    // }
                 }
             }
         }
@@ -97,7 +83,7 @@ impl<'d> Renderer<'d> {
             let ty = (yfrac * (tex.height-1) as Float) as usize;
             tex.texture[ty * tex.width + tx]
         } else {
-            Color::cons(0, 0, 0)
+            sphere.color
         }
     }
 
@@ -108,12 +94,6 @@ impl<'d> Renderer<'d> {
 
     fn luminosity(&self, normal: &Vec3) -> Float {
         self.globals.light.dot(normal).clamp(0.0, 1.0)
-    }
-
-    fn luminosity_char(&self, normal: &Vec3) -> char {
-        let luminosity = self.luminosity(normal);
-        let idx = ((self.globals.asciigrad.len()-1) as Float * luminosity).round() as usize;
-        self.globals.asciigrad[idx]
     }
 }
 
@@ -141,16 +121,16 @@ impl TextureData {
 }
 
 pub struct TextureGlobal {
-    pub asciigrad: Vec<char>,
+    pub _asciigrad: Vec<char>,
     pub light: Vec3,
 }
 
 impl TextureGlobal {
     pub fn new() -> TextureGlobal {
-        let asciigrad = ASCIIGRAD.chars().collect();
+        let _asciigrad = ASCIIGRAD.chars().collect();
         let mut light = Vec3::cons(LIGHT[0], LIGHT[1], LIGHT[2]);
         light.normalize();
-        TextureGlobal { asciigrad, light }
+        TextureGlobal { _asciigrad, light }
     }
 }
 
@@ -162,15 +142,15 @@ pub struct Color {
 }
 
 impl Color {
-    fn cons(r: u8, g: u8, b: u8) -> Color {
+    pub fn cons(r: u8, g: u8, b: u8) -> Color {
         Color { red: r, green: g, blue: b }
     }
 
-    fn to_ansifront(self) -> String {
-        format!("\x1b[38;2;{};{};{}m", self.red, self.green, self.blue)
+    pub fn to_ansiback(self) -> String {
+        format!("\x1b[48;2;{};{};{}m", self.red, self.green, self.blue)
     }
 
-    fn from_str(string: &str) -> Color {
+    pub fn from_str(string: &str) -> Color {
         let mut rgb = string.split(';');
         if let (Some(r), Some(g), Some(b)) = (rgb.next(), rgb.next(), rgb.next()) {
             if let (Ok(r), Ok(g), Ok(b)) = (r.parse::<u8>(), g.parse::<u8>(), b.parse::<u8>()) {
@@ -180,11 +160,7 @@ impl Color {
         Color::cons(0, 0, 0)
     }
 
-    fn to_ansiback(self) -> String {
-        format!("\x1b[48;2;{};{};{}m", self.red, self.green, self.blue)
-    }
-
-    fn lighting(&mut self, lumin: Float) {
+    pub fn lighting(&mut self, lumin: Float) {
         let lumin = lumin.max(0.05);
         self.red = (self.red as Float * lumin) as u8;
         self.green = (self.green as Float * lumin) as u8;

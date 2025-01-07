@@ -13,14 +13,14 @@ pub struct Renderer<'d> {
     pub viewmodel: &'d ViewModel,
     pub buffer: &'d mut Buffer,
     pub system: &'d System,
-    pub textures: &'d Textures,
+    pub globals: &'d TextureGlobal,
 }
 
 impl<'d> Renderer<'d> {
     pub fn cons(
-        view: &'d ViewModel, buff: &'d mut Buffer, sys: &'d System, textures: &'d Textures
+        view: &'d ViewModel, buff: &'d mut Buffer, sys: &'d System, globals: &'d TextureGlobal
     ) -> Renderer<'d> {
-        Renderer { viewmodel: view, buffer: buff, system: sys, textures }
+        Renderer { viewmodel: view, buffer: buff, system: sys, globals }
     }
 
     pub fn render_spheres(&mut self) {
@@ -66,31 +66,39 @@ impl<'d> Renderer<'d> {
                     let mut normal = worldframe - sphere.loc;
                     normal.normalize();
                     // self.buffer.visual[idx] = self.luminosity_char(&normal);
-                    self.buffer.visual[idx] = self.map_texture(theta, phi);
+                    // self.buffer.visual[idx] = self.map_texture(theta, phi, sphere);
+                    let mut color = self.map_texture(theta, phi, sphere);
+                    let lumin = self.luminosity(&normal);
+                    color.lighting(lumin);
+                    self.buffer.color[idx] = Some(color);
                     self.buffer.depth[idx] = invx;
-                    if self.buffer.visual[idx] == ' ' {
-                        let mut color = Color::cons(10, 100, 250);
-                        let lumin = self.luminosity(&normal);
-                        color.lighting(lumin);
-                        self.buffer.color[idx] = Some(color);
-                    }
-                    else {
-                        let mut color = Color::cons(10, 70, 10);
-                        let lumin = self.luminosity(&normal);
-                        color.lighting(lumin);
-                        self.buffer.color[idx] = Some(color);
-                    }
+                    // if self.buffer.visual[idx] == ' ' {
+                    //     let mut color = Color::cons(10, 100, 250);
+                    //     let lumin = self.luminosity(&normal);
+                    //     color.lighting(lumin);
+                    //     self.buffer.color[idx] = Some(color);
+                    // }
+                    // else {
+                    //     let mut color = Color::cons(10, 70, 10);
+                    //     let lumin = self.luminosity(&normal);
+                    //     color.lighting(lumin);
+                    //     self.buffer.color[idx] = Some(color);
+                    // }
                 }
             }
         }
     }
 
-    fn map_texture(&self, theta: Float, phi: Float) -> char {
+    fn map_texture(&self, theta: Float, phi: Float, sphere: &Sphere) -> Color {
         let xfrac = theta / TAU;
         let yfrac = phi / PI;
-        let tx = (xfrac * (self.textures.width-1) as Float) as usize;
-        let ty = (yfrac * (self.textures.height-1) as Float) as usize;
-        self.textures.earth_tex[ty * self.textures.width + tx]
+        if let Some(tex) = &sphere.texture {
+            let tx = (xfrac * (tex.width-1) as Float) as usize;
+            let ty = (yfrac * (tex.height-1) as Float) as usize;
+            tex.texture[ty * tex.width + tx]
+        } else {
+            Color::cons(0, 0, 0)
+        }
     }
 
     fn sphere_distance_square(&self, sphere: &Sphere) -> Float {
@@ -99,52 +107,51 @@ impl<'d> Renderer<'d> {
     }
 
     fn luminosity(&self, normal: &Vec3) -> Float {
-        self.textures.light.dot(normal).clamp(0.0, 1.0)
+        self.globals.light.dot(normal).clamp(0.0, 1.0)
     }
 
     fn luminosity_char(&self, normal: &Vec3) -> char {
-        let luminosity = self.textures.light.dot(normal).clamp(0.0, 1.0);
-        let idx = ((self.textures.asciigrad.len()-1) as Float * luminosity).round() as usize;
-        self.textures.asciigrad[idx]
+        let luminosity = self.luminosity(normal);
+        let idx = ((self.globals.asciigrad.len()-1) as Float * luminosity).round() as usize;
+        self.globals.asciigrad[idx]
     }
 }
 
-pub struct Texture {
-    tag: Int,
-    texture: Vec<char>,
-    height: usize,
-    width: usize,
+pub struct TextureData {
+    pub texture: Vec<Color>,
+    pub height: usize, pub width: usize,
 }
 
-pub struct Textures {
+impl TextureData {
+    pub fn from(path: &str) -> TextureData {
+        let file = read_to_string(path).expect("unable to load texture");
+        let mut texture = Vec::new();
+        let mut height = 0;
+        let mut width = 0;
+        for line in file.lines() {
+            for col in line.split_whitespace().rev() {
+                let color = Color::from_str(col);
+                texture.push(color);
+            }
+            width = line.split_whitespace().count();
+            height += 1;
+        }
+        TextureData { texture, height, width }
+    }
+}
+
+pub struct TextureGlobal {
     pub asciigrad: Vec<char>,
     pub light: Vec3,
-    pub earth_tex: Vec<char>,
-    pub height: usize,
-    pub width: usize,
 }
 
-impl Textures {
-    pub fn new() -> Textures {
+impl TextureGlobal {
+    pub fn new() -> TextureGlobal {
         let asciigrad = ASCIIGRAD.chars().collect();
         let mut light = Vec3::cons(LIGHT[0], LIGHT[1], LIGHT[2]);
         light.normalize();
-        let (earth_tex, height, width) = load_ascii_texture("../planet_textures/earth_map.txt");
-        Textures { asciigrad, light, earth_tex, width, height }
+        TextureGlobal { asciigrad, light }
     }
-}
-
-pub fn load_ascii_texture(path: &str) -> (Vec<char>, usize, usize) {
-    let file = read_to_string(path).unwrap_or_else(|_| String::from("unable to load texture"));
-    let mut texture = Vec::new();
-    let mut height = 0;
-    let mut width = 0;
-    for line in file.lines() {
-        width = line.chars().count();
-        height += 1;
-        line.chars().rev().for_each(|char| texture.push(char));
-    }
-    (texture, height, width)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -159,7 +166,21 @@ impl Color {
         Color { red: r, green: g, blue: b }
     }
 
-    fn to_ansi(self) -> String {
+    fn to_ansifront(self) -> String {
+        format!("\x1b[38;2;{};{};{}m", self.red, self.green, self.blue)
+    }
+
+    fn from_str(string: &str) -> Color {
+        let mut rgb = string.split(';');
+        if let (Some(r), Some(g), Some(b)) = (rgb.next(), rgb.next(), rgb.next()) {
+            if let (Ok(r), Ok(g), Ok(b)) = (r.parse::<u8>(), g.parse::<u8>(), b.parse::<u8>()) {
+                return Color::cons(r, g, b);
+            }
+        }
+        Color::cons(0, 0, 0)
+    }
+
+    fn to_ansiback(self) -> String {
         format!("\x1b[48;2;{};{};{}m", self.red, self.green, self.blue)
     }
 
@@ -206,8 +227,7 @@ impl Buffer {
         let mut string = String::new();
         self.visual.iter().enumerate().for_each(|(idx, ele)| {
             if let Some(color) = self.color[idx] {
-                string.push_str(&color.to_ansi());
-                string.push_str("\x1b[38;2;100;42;42m");
+                string.push_str(&color.to_ansiback());
             }
             if idx % self.width as usize != 0 {
                 string.push(*ele);

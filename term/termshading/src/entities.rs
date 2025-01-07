@@ -1,6 +1,7 @@
 
 
 
+use crate::renderer::TextureData;
 use crate::{Float, PI, TAU};
 use crate::math::Vec3;
 
@@ -62,11 +63,18 @@ impl ViewModel {
 pub struct Sphere {
     pub loc: Vec3,
     pub rad: Float,
+    pub texture: Option<TextureData>,
 }
 
 impl Sphere {
-    pub fn cons(loc: Vec3, rad: Float) -> Sphere {
-        Sphere { loc, rad }
+    pub fn cons(loc: Vec3, rad: Float, texpath: Option<&str>) -> Sphere {
+        let texture;
+        if let Some(path) = texpath {
+            texture = Some(TextureData::from(path));
+        } else {
+            texture = None;
+        }
+        Sphere { loc, rad, texture }
     }
 }
 

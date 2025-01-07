@@ -9,7 +9,7 @@ mod entities;
 
 
 
-use crate::renderer::{Buffer, Renderer, Textures};
+use crate::renderer::{Buffer, Renderer, TextureGlobal};
 use crate::math::Vec3;
 use crate::entities::{Sphere, System, ViewModel};
 use crate::utils::{get_user_input, print_debug, sleep};
@@ -30,11 +30,13 @@ type Int = i32;
 
 fn main() {
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let sphere = Sphere::cons(Vec3::cons(50.0, 0.0, 0.0), 10.0);
-    let textures = Textures::new();
+    let sphere = Sphere::cons(Vec3::cons(50.0, 0.0, 0.0), 10.0,
+        Some("../planet_textures/earth_map.txt"));
+    let textures = TextureGlobal::new();
     let mut viewmodel = ViewModel::new();
     let mut system = System::from(sphere);
-    system.add_sphere(Sphere::cons(Vec3::cons(100.0, 0.0, 0.0), 2.0));
+    system.add_sphere(Sphere::cons(Vec3::cons(300.0, 0.0, 0.0), 4.0,
+        Some("../planet_textures/moon_map.txt")));
 
     // ansi escape to clear terminal
     print!("\x1b[2J");
@@ -54,6 +56,6 @@ fn main() {
         viewmodel.react(&inputs);
 
         print_debug(&viewmodel);
-        sleep(5);
+        sleep(1);
     }
 }

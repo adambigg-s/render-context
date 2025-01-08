@@ -2,11 +2,25 @@
 
 
 
-use std::ops::{Add, Mul, Sub};
+use std::ops::{Add, AddAssign, Mul, Sub};
 
-use crate::Float;
+use crate::{Float, Int};
 
 
+
+pub trait Floatify {
+    fn floatify(self) -> Float;
+}
+
+impl Floatify for Int {
+    fn floatify(self) -> Float {
+        self as Float
+    }
+}
+
+impl Floatify for Float {
+    fn floatify(self) -> Float {self}
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3 {
@@ -15,8 +29,8 @@ pub struct Vec3 {
 
 impl Vec3 {
     pub fn cons<T>(x: T, y: T, z: T) -> Vec3
-    where T: Into<Float> {
-        Vec3 { x: x.into(), y: y.into(), z: z.into() }
+    where T: Floatify {
+        Vec3 { x: x.floatify(), y: y.floatify(), z: z.floatify() }
     }
 
     pub fn rotatex(&mut self, a: Float) {
@@ -49,12 +63,18 @@ impl Vec3 {
         self.rotatez(angles.z);
     }
 
-    pub fn dot(&self, other: &Vec3) -> Float {
+    pub fn rotationmatzyx(&mut self, angles: Vec3) {
+        self.rotatez(angles.z);
+        self.rotatey(angles.y);
+        self.rotatex(angles.x);
+    }
+
+    pub fn inner_prod(&self, other: &Vec3) -> Float {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
     pub fn normalize(&mut self) {
-        let length = self.dot(self).sqrt();
+        let length = self.inner_prod(self).sqrt();
         self.x /= length; self.y /= length; self.z /= length;
     }
 }
@@ -70,6 +90,12 @@ impl Add for Vec3 {
     type Output = Vec3;
     fn add(self, other: Vec3) -> Self::Output {
         Vec3::cons(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
+impl AddAssign for Vec3 {
+    fn add_assign(&mut self, other: Self) {
+        self.x += other.x; self.y += other.y; self.z += other.z;
     }
 }
 
@@ -100,7 +126,7 @@ mod test {
     fn dot() {
         let v1 = Vec3::cons(1.0, 0.0, 0.0);
         let v2 = Vec3::cons(1.0, 0.0, 0.0);
-        let test = v1.dot(&v2);
+        let test = v1.inner_prod(&v2);
         assert!(test as Int == 1);
     }
 }

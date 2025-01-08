@@ -1,7 +1,7 @@
 
 
 
-use std::{io::{stdout, Write}, time::Duration};
+use std::{error::Error, io::{stdout, Write}, time::Duration};
 
 use crossterm::event::{self, Event, KeyCode};
 
@@ -37,9 +37,19 @@ pub fn get_user_input() -> Vec<char> {
                 KeyCode::Char('r') => inputs.push('r'),
                 KeyCode::Char('t') => inputs.push('t'),
                 KeyCode::Char('g') => inputs.push('g'),
+                KeyCode::Char('[') => inputs.push('['),
+                KeyCode::Char(']') => inputs.push(']'),
                 _ => {}
             }
         }
     }
     inputs
 }
+
+pub fn flash_error(error: Box<dyn Error>, time: u64) {
+    println!("error: {}", error);
+    sleep(time);
+}
+
+#[inline]
+pub fn dump<Any>(_thing: Any) {}

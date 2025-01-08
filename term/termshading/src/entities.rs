@@ -11,11 +11,13 @@ pub struct ViewModel {
     pub pos: Vec3,
     pub rot: Float,
     pub tilt: Float,
+    rotspeed: Float,
+    transspeed: Float,
 }
 
 impl ViewModel {
-    pub fn new() -> ViewModel {
-        ViewModel { pos: Vec3::cons(0.0, 0.0, 0.0), rot: 0.0, tilt: 0.0 }
+    pub fn new(pos: Vec3) -> ViewModel {
+        ViewModel { pos, rot: 0.0, tilt: 0.0, rotspeed: PI / 75.0, transspeed: 5.0 }
     }
 
     pub fn react(&mut self, inputs: &[char]) {
@@ -31,22 +33,22 @@ impl ViewModel {
                 'e' => self.rotate(1.0),
                 't' => self.tilt(1.0),
                 'g' => self.tilt(-1.0),
+                '[' => self.transspeed -= 0.5,
+                ']' => self.transspeed += 0.5,
                 _ => {}
             }
         }
     }
 
     fn translate(&mut self, dir: Vec3) {
-        let speed = 2.0;
-        let mut transdir = dir * speed;
+        let mut transdir = dir * self.transspeed;
         transdir.rotatey(-self.tilt);
         transdir.rotatez(self.rot);
-        self.pos = self.pos + transdir;
+        self.pos += transdir;
     }
 
     fn rotate(&mut self, dir: Float) {
-        let speed = PI / 75.0;
-        self.rot += dir * speed;
+        self.rot += dir * self.rotspeed;
         if self.rot < 0.0 {
             self.rot += TAU;
         }
@@ -56,13 +58,12 @@ impl ViewModel {
     }
 
     fn tilt(&mut self, dir: Float) {
-        let speed = PI / 75.0;
-        self.tilt += dir * speed;
+        self.tilt += dir * self.rotspeed;
         self.tilt = self.tilt.clamp(-PI / 2.0, PI / 2.0);
     }
 }
 
-pub struct Sphere {
+pub struct Planet {
     pub loc: Vec3,
     pub rad: Float,
     pub texture: Option<TextureData>,
@@ -70,17 +71,32 @@ pub struct Sphere {
     pub lightsource: bool
 }
 
-impl Sphere {
+impl Planet {
     pub fn cons(
-        loc: Vec3, rad: Float, texpath: Option<&str>, color: Color, lightsource: bool
-    ) -> Sphere {
+        loc: Vec3, rad: Float, texpath: Option<&str>, color: Option<Color>, lightsource: bool
+    ) -> Planet {
         let texture;
         if let Some(path) = texpath {
             texture = Some(TextureData::from(path));
         } else {
             texture = None;
         }
-        Sphere { loc, rad, texture, color, lightsource }
+        let color = if let Some(color) = color { color } else { Color::cons(0, 0, 0) };
+        Planet { loc, rad, texture, color, lightsource }
+    }
+}
+
+pub struct Ring {
+    pub loc: Vec3,
+    pub rad: Float,
+    pub depth: Float,
+    pub texture: TextureData,
+}
+
+impl Ring {
+    pub fn cons(loc: Vec3, rad: Float, depth: Float, texpath: &str) -> Ring {
+        let texture = TextureData::from(texpath);
+        Ring { loc, rad, depth, texture }
     }
 }
 
@@ -95,7 +111,7 @@ impl SpacialReference {
     }
 }
 
-pub struct Ellipse {
+pub struct Orbit {
     pub loc: Vec3,
     pub semimajor: Float,
     pub eccentricity: Float,
@@ -104,12 +120,12 @@ pub struct Ellipse {
     pub _argofperi: Float,
 }
 
-impl Ellipse {
+impl Orbit {
     pub fn cons(
         loc: Vec3, semimajor: Float, eccentricity: Float, inclination: Float,
         longofascendingnode: Float, argofperi: Float
-    ) -> Ellipse {
-        Ellipse {
+    ) -> Orbit {
+        Orbit {
             loc, semimajor, eccentricity, _inclination: inclination,
             _longofascendingnode: longofascendingnode, _argofperi: argofperi
         }
@@ -117,25 +133,38 @@ impl Ellipse {
 }
 
 pub struct System {
-    pub spheres: Vec<Sphere>,
+    pub planets: Vec<Planet>,
     pub spacerefs: Vec<SpacialReference>,
-    pub ellipses: Vec<Ellipse>,
+    pub orbits: Vec<Orbit>,
+    pub rings: Vec<Ring>,
+    pub lightsources: Vec<Vec3>,
 }
 
 impl System {
-    pub fn from(sphere: Sphere) -> System {
-        System { spheres: vec![sphere], spacerefs: Vec::new(), ellipses: Vec::new() }
+    pub fn from(sphere: Planet) -> System {
+        let source = sphere.loc;
+        System {
+            planets: vec![sphere], spacerefs: Vec::new(), orbits: Vec::new(),
+            rings: Vec::new(), lightsources: vec![source],
+        }
     }
 
-    pub fn add_sphere(&mut self, sphere: Sphere) {
-        self.spheres.push(sphere);
+    pub fn add_planet(&mut self, planet: Planet) {
+        if planet.lightsource {
+            self.lightsources.push(planet.loc);
+        }
+        self.planets.push(planet);
     }
 
     pub fn add_spaceref(&mut self, spaceref: SpacialReference) {
         self.spacerefs.push(spaceref);
     }
 
-    pub fn add_ellipse(&mut self, ellipse: Ellipse) {
-        self.ellipses.push(ellipse);
+    pub fn add_orbit(&mut self, ellipse: Orbit) {
+        self.orbits.push(ellipse);
+    }
+
+    pub fn add_ring(&mut self, ring: Ring) {
+        self.rings.push(ring);
     }
 }

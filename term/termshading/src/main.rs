@@ -6,29 +6,25 @@ mod math;
 mod utils;
 mod renderer;
 mod entities;
+mod configparser;
 
 
 
-use crate::renderer::{Buffer, Color, Renderer, TextureGlobal};
+use minifb::{Window, WindowOptions};
+
+use crate::configparser::{parse_config, SUNPATH};
+use crate::renderer::{Buffer, Renderer};
 use crate::math::Vec3;
-use crate::entities::{Ellipse, SpacialReference, Sphere, System, ViewModel};
-use crate::utils::{get_user_input, print_debug, sleep};
+use crate::entities::{Planet, System, ViewModel};
+use crate::utils::{dump, get_user_input, print_debug, sleep};
 
 
 
 const HEIGHT: Int = 60;
 const WIDTH: Int = 240;
-// const HEIGHT: Int = 85;
-// const WIDTH: Int = 360;
 const TAU: Float = 6.2831855;
 const PI: Float = 3.1415925;
-const ASCIIGRAD: &str = ".,:;+*?%#@";
-const SUNPATH: &str = "../planet_textures/sun_map.txt";
-const EARTHPATH: &str = "../planet_textures/earth_map.txt";
-const MOONPATH: &str = "../planet_textures/moon_map.txt";
-const MARSPATH: &str = "../planet_textures/mars_map.txt";
-const JUPITERPATH: &str = "../planet_textures/jupiter_map.txt";
-const NEPTUNEPATH: &str = "../planet_textures/neptune_map.txt";
+const CONFIGPATH: &str = "config.config";
 
 
 
@@ -36,26 +32,29 @@ type Float = f32;
 type Int = i32;
 
 fn main() {
+    // decides whether to open gui or tui
+    let mut debug: bool = false;
+    let envs: Vec<String> = std::env::args().collect();
+    if envs.get(1).is_some() { debug = true; }
+    let mut window: Option<Window> = None;
+    if debug {
+        window = Some(Window::new(
+            "debug buffer",
+            400, 400, WindowOptions { scale: minifb::Scale::X2, ..Default::default() }
+        ).unwrap());
+    }
+    let mut debug_buffer = Buffer::cons(400, 400);
+
+    // tui stuff
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let mut viewmodel = ViewModel::new();
-    let sphere = Sphere::cons(Vec3::cons(50.0, 0.0, 0.0), 20.0,
-        Some(EARTHPATH), Color::cons(0, 0, 0), false);
-    let mut system = System::from(sphere);
-    system.add_spaceref(SpacialReference::cons(Vec3::cons(100.0, 20.0, 2.0), 12.0));
-    system.add_sphere(Sphere::cons(Vec3::cons(100.0, 20.0, 2.0), 6.0,
-        Some(MOONPATH), Color::cons(0, 0, 0), false));
-    system.add_sphere(Sphere::cons(Vec3::cons(-100.0, 30.0, 0.0), 15.0,
-        Some(JUPITERPATH), Color::cons(255, 246, 84), false));
-    system.add_sphere(Sphere::cons(Vec3::cons(50.0, 200.0, -10.0), 10.0,
-        Some(MARSPATH), Color::cons(0, 0, 0), false));
-    system.add_sphere(Sphere::cons(Vec3::cons(-10.0, -200.0, 100.0), 50.0,
-        Some(SUNPATH), Color::cons(255, 246, 84), true));
-    system.add_sphere(Sphere::cons(Vec3::cons(-20.0, 70.0, -20.0), 15.0,
-        Some(NEPTUNEPATH), Color::cons(0, 0, 0), false));
-    system.add_ellipse(Ellipse::cons(Vec3::cons(50.0, 0.0, 0.0), 22.0, 0.4, 0.0, 0.0, 0.0));
-    system.add_sphere(Sphere::cons(Vec3::cons(70.0, 20.0, 10.0), 3.0,
-        Some(SUNPATH), Color::cons(255, 180, 210), true));
-    let textures = TextureGlobal::new(&system);
+    let sun = Planet::cons(Vec3::cons(0, 0, 0), 50.0, Some(SUNPATH), None, true);
+    let mut system = System::from(sun);
+    let mut viewmodel = ViewModel::new(Vec3::cons(0, 100, 0));
+
+    parse_config(CONFIGPATH, &mut system).unwrap_or_else(|err| {
+        println!("error parsing config: {}", err);
+        panic!();
+    });
 
     // ansi escape to clear terminal
     print!("\x1b[2J");
@@ -68,13 +67,35 @@ fn main() {
             break;
         }
 
-        let mut renderer = Renderer::cons(&viewmodel, &mut buffer, &system, &textures);
-        renderer.buffer.clear();
-        renderer.render_spheres();
-        renderer.render_spacerefs();
-        renderer.render_ellipses();
-        buffer.display();
-        viewmodel.react(&inputs);
+        let mut renderer = Renderer::cons(&viewmodel, &mut buffer, &system);
+        let mut debug_renderer = Renderer::cons(&viewmodel, &mut debug_buffer, &system);
+        if !debug {
+            renderer.buffer.clear();
+            renderer.render_planets();
+            renderer.render_spacerefs();
+            renderer.render_orbits();
+            renderer.render_rings();
+            dump(renderer);
+            viewmodel.react(&inputs);
+            buffer.display();
+        }
+        else {
+            debug_renderer.buffer.clear();
+            debug_renderer.render_planets();
+            debug_renderer.render_spacerefs();
+            debug_renderer.render_orbits();
+            debug_renderer.render_rings();
+            dump(debug_renderer);
+            viewmodel.react(&inputs);
+
+            if let Some(ref mut window) = window {
+                window.update_with_buffer(
+                    &debug_buffer.debug(),
+                    debug_buffer.width as usize,
+                    debug_buffer.height as usize
+                ).unwrap();
+            }
+        }
 
         print_debug(&viewmodel);
         sleep(1);

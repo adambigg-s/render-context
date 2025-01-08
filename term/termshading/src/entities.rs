@@ -84,16 +84,58 @@ impl Sphere {
     }
 }
 
+pub struct SpacialReference {
+    pub loc: Vec3,
+    pub length: Float,
+}
+
+impl SpacialReference {
+    pub fn cons(loc: Vec3, length: Float) -> SpacialReference {
+        SpacialReference { loc, length }
+    }
+}
+
+pub struct Ellipse {
+    pub loc: Vec3,
+    pub semimajor: Float,
+    pub eccentricity: Float,
+    pub _inclination: Float,
+    pub _longofascendingnode: Float,
+    pub _argofperi: Float,
+}
+
+impl Ellipse {
+    pub fn cons(
+        loc: Vec3, semimajor: Float, eccentricity: Float, inclination: Float,
+        longofascendingnode: Float, argofperi: Float
+    ) -> Ellipse {
+        Ellipse {
+            loc, semimajor, eccentricity, _inclination: inclination,
+            _longofascendingnode: longofascendingnode, _argofperi: argofperi
+        }
+    }
+}
+
 pub struct System {
     pub spheres: Vec<Sphere>,
+    pub spacerefs: Vec<SpacialReference>,
+    pub ellipses: Vec<Ellipse>,
 }
 
 impl System {
     pub fn from(sphere: Sphere) -> System {
-        System { spheres: vec![sphere] }
+        System { spheres: vec![sphere], spacerefs: Vec::new(), ellipses: Vec::new() }
     }
 
     pub fn add_sphere(&mut self, sphere: Sphere) {
         self.spheres.push(sphere);
+    }
+
+    pub fn add_spaceref(&mut self, spaceref: SpacialReference) {
+        self.spacerefs.push(spaceref);
+    }
+
+    pub fn add_ellipse(&mut self, ellipse: Ellipse) {
+        self.ellipses.push(ellipse);
     }
 }

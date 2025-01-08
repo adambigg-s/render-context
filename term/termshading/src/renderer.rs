@@ -4,6 +4,7 @@
 use std::fs::read_to_string;
 use std::io::{stdout, Write};
 
+use crate::entities::{Ellipse, SpacialReference};
 use crate::{Float, Int, Sphere, System, ViewModel, ASCIIGRAD, PI, TAU};
 use crate::math::Vec3;
 
@@ -28,12 +29,93 @@ impl<'d> Renderer<'d> {
             self.render_sphere(sphere);
         }
     }
-    
-    pub fn render_sphere(&mut self, sphere: &Sphere) {
-        let distance = self.sphere_distance_square(sphere).sqrt() - sphere.rad;
+
+    pub fn render_ellipses(&mut self) {
+        for ellipse in &self.system.ellipses {
+            self.render_ellipse(ellipse);
+        }
+    }
+
+    pub fn render_spacerefs(&mut self) {
+        for spaceref in &self.system.spacerefs {
+            self.render_spaceref(spaceref);
+        }
+    }
+
+    fn render_ellipse(&mut self, ellipse: &Ellipse) {
+        let distance = self.distance_square(&ellipse.loc).sqrt();
+        if self.behind_view(&ellipse.loc) || distance > 100.0 { return; }
+        let thetadelta = (distance / (ellipse.semimajor * 170.0)).max(0.01);
+        let thetastep = (TAU / thetadelta) as Int;
+
+        for thetamul in 0..thetastep {
+            let theta = thetamul as Float * thetadelta;
+
+            let rad = ellipse.semimajor
+                * (1.0 - ellipse.eccentricity * ellipse.eccentricity)
+                / (1.0 + ellipse.eccentricity * theta.cos());
+
+            let x = rad * theta.cos();
+            let y = rad * theta.sin();
+            let worldframe = Vec3::cons(x, y, 0.0) + ellipse.loc;
+
+            let viewframe = self.world_to_view(&worldframe);
+            if viewframe.x <= 0.0 { continue; }
+
+            let (screenx, screeny) = self.view_to_screen(&viewframe);
+
+            if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
+                if viewframe.x > self.buffer.depth[idx] { continue; }
+                let mut normal = worldframe - ellipse.loc;
+                normal.normalize();
+                let luminance = {
+                    self.globals.lightsources.iter().map(|lightsource| {
+                        let mut light = *lightsource - worldframe;
+                        light.normalize();
+                        light.dot(&normal).max(0.0)
+                    }).sum::<Float>().min(1.0)
+                };
+                let mut color = Color::cons(204, 174, 6);
+                color.lighting(luminance);
+                self.buffer.color[idx] = Some(color);
+                self.buffer.depth[idx] = viewframe.x;
+            }
+
+        }
+    }
+
+    fn render_spaceref(&mut self, spaceref: &SpacialReference) {
+        let distance = self.distance_square(&spaceref.loc).sqrt();
+        if self.behind_view(&spaceref.loc) || distance > 100.0 { return; }
+        let delta = 1.0 / 2.0;
+        let deltastep = (spaceref.length / delta) as Int;
+        for deltamul in 0..deltastep {
+            let axisdelta = deltamul as Float * delta;
+            self.axis_assistant(spaceref, Vec3::cons(axisdelta, 0.0, 0.0), Color::cons(255, 10, 10));
+            self.axis_assistant(spaceref, Vec3::cons(0.0, axisdelta, 0.0), Color::cons(10, 255, 10));
+            self.axis_assistant(spaceref, Vec3::cons(0.0, 0.0, axisdelta), Color::cons(10, 10, 255));
+        }
+    }
+
+    fn axis_assistant(&mut self, spaceref: &SpacialReference, delta: Vec3, color: Color) {
+        let worldframe = spaceref.loc + delta;
+        let viewframe = self.world_to_view(&worldframe);
+        if viewframe.x <= 0.0 { return; }
+
+        let (screenx, screeny) = self.view_to_screen(&viewframe);
+        if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
+            if viewframe.x > self.buffer.depth[idx] { return; }
+            self.buffer.color[idx] = Some(color);
+            self.buffer.depth[idx] = viewframe.x;
+        }
+    }
+
+    fn render_sphere(&mut self, sphere: &Sphere) {
+        if self.behind_view(&sphere.loc) { return; }
+        
+        let distance = self.distance_square(&sphere.loc).sqrt() - sphere.rad;
         let delta = (distance / (sphere.rad * 200.0)).max(0.0075);
         let (thetadelta, phidelta) = (delta, delta * 2.0);
-        let (scalingx, scalingy) = (100.0, 48.0);
         let thetastep = (TAU / thetadelta) as Int;
         let phistep = (PI / phidelta) as Int;
 
@@ -50,27 +132,21 @@ impl<'d> Renderer<'d> {
                 let spherez = sphere.rad * cosp + sphere.loc.z;
                 let worldframe = Vec3::cons(spherex, spherey, spherez);
 
-                let mut viewframe = worldframe - self.viewmodel.pos;
-                viewframe.rotatez(-self.viewmodel.rot);
-                viewframe.rotatey(self.viewmodel.tilt);
-
+                let viewframe = self.world_to_view(&worldframe);
                 if viewframe.x <= 0.0 { continue; }
 
-                let invx = 1.0 / viewframe.x;
-                let (modifierx, modifiery) = (invx * scalingx, invx * scalingy);
-                let screenx = (viewframe.y * modifierx + self.buffer.halfwidth() as Float) as Int;
-                let screeny = (viewframe.z * modifiery + self.buffer.halfheight() as Float) as Int;
+                let (screenx, screeny) = self.view_to_screen(&viewframe);
 
                 if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
-                    if invx < self.buffer.depth[idx] { continue; }
+                    if viewframe.x > self.buffer.depth[idx] { continue; }
                     let mut normal = worldframe - sphere.loc;
                     normal.normalize();
-                    let lumin = {
+                    let luminance = {
                         if !sphere.lightsource {
                             self.globals.lightsources.iter().map(|lightsource| {
                                 let mut light = *lightsource - worldframe;
                                 light.normalize();
-                                light.dot(&normal)
+                                light.dot(&normal).max(0.0)
                             }).sum::<Float>().min(1.0)
                         }
                         else {
@@ -78,12 +154,33 @@ impl<'d> Renderer<'d> {
                         }
                     };
                     let mut color = self.map_texture(theta, phi, sphere);
-                    color.lighting(lumin);
+                    color.lighting(luminance);
                     self.buffer.color[idx] = Some(color);
-                    self.buffer.depth[idx] = invx;
+                    self.buffer.depth[idx] = viewframe.x;
                 }
             }
         }
+    }
+
+    fn world_to_view(&self, worldframe: &Vec3) -> Vec3 {
+        let mut viewframe = *worldframe - self.viewmodel.pos;
+        viewframe.rotatez(-self.viewmodel.rot);
+        viewframe.rotatey(self.viewmodel.tilt);
+        viewframe
+    }
+
+    fn view_to_screen(&self, viewframe: &Vec3) -> (Int, Int) {
+        let (scalingx, scalingy) = (100.0, 48.0);
+        let invx = 1.0 / viewframe.x;
+        let (modx, mody) = (invx * scalingx, invx * scalingy);
+        let screenx = (viewframe.y * modx + self.buffer.halfwidth() as Float) as Int;
+        let screeny = (viewframe.z * mody + self.buffer.halfheight() as Float) as Int;
+        (screenx, screeny)
+    }
+
+    fn behind_view(&self, point: &Vec3) -> bool {
+        let viewframe = self.world_to_view(point);
+        viewframe.x <= 0.0
     }
 
     fn map_texture(&self, theta: Float, phi: Float, sphere: &Sphere) -> Color {
@@ -99,8 +196,8 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn sphere_distance_square(&self, sphere: &Sphere) -> Float {
-        let relative = sphere.loc - self.viewmodel.pos;
+    fn distance_square(&self, point: &Vec3) -> Float {
+        let relative = *point - self.viewmodel.pos;
         relative.dot(&relative)
     }
 }
@@ -213,6 +310,7 @@ impl Buffer {
 
     pub fn display(&self) {
         let mut string = String::new();
+        print!("\x1b[H");
         self.visual.iter().enumerate().for_each(|(idx, ele)| {
             if let Some(color) = self.color[idx] {
                 string.push_str(&color.to_ansiback());
@@ -225,7 +323,6 @@ impl Buffer {
             }
             string.push_str("\x1b[0m");
         });
-        print!("\x1b[H");
         println!("{}", string);
         stdout().flush().unwrap();
     }
@@ -241,6 +338,6 @@ impl Buffer {
     pub fn clear(&mut self) {
         self.visual.fill(' ');
         self.color.fill(None);
-        self.depth.fill(0.0);
+        self.depth.fill(Float::MAX);
     }
 }

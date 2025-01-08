@@ -52,7 +52,7 @@ fn main() {
         Some(SUNPATH), Color::cons(255, 246, 84), true));
     system.add_sphere(Sphere::cons(Vec3::cons(-20.0, 70.0, -20.0), 15.0,
         Some(NEPTUNEPATH), Color::cons(0, 0, 0), false));
-    system.add_ellipse(Ellipse::cons(Vec3::cons(50.0, 0.0, 0.0), 30.0, 0.3, 0.0, 0.0, 0.0));
+    system.add_ellipse(Ellipse::cons(Vec3::cons(50.0, 0.0, 0.0), 22.0, 0.4, 0.0, 0.0, 0.0));
     system.add_sphere(Sphere::cons(Vec3::cons(70.0, 20.0, 10.0), 3.0,
         Some(SUNPATH), Color::cons(255, 180, 210), true));
     let textures = TextureGlobal::new(&system);

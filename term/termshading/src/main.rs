@@ -21,7 +21,11 @@ const WIDTH: Int = 220;
 const TAU: Float = 6.2831855;
 const PI: Float = 3.1415925;
 const ASCIIGRAD: &str = ".,:;+*?%#@";
-const LIGHT: [Float; 3] = [-1.0, 1.3, 0.4];
+const SUNPATH: &str = "../planet_textures/sun_map.txt";
+const EARTHPATH: &str = "../planet_textures/earth_map.txt";
+const MOONPATH: &str = "../planet_textures/moon_map.txt";
+const MARSPATH: &str = "../planet_textures/mars_map.txt";
+const JUPITERPATH: &str = "../planet_textures/jupiter_map.txt";
 
 
 
@@ -30,15 +34,19 @@ type Int = i32;
 
 fn main() {
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let sphere = Sphere::cons(Vec3::cons(50.0, 0.0, 0.0), 10.0,
-        Some("../planet_textures/earth_map.txt"), Color::cons(0, 0, 0));
-    let textures = TextureGlobal::new();
+    let sphere = Sphere::cons(Vec3::cons(50.0, 0.0, 0.0), 20.0,
+        Some(EARTHPATH), Color::cons(0, 0, 0), false);
     let mut viewmodel = ViewModel::new();
     let mut system = System::from(sphere);
-    system.add_sphere(Sphere::cons(Vec3::cons(300.0, 0.0, 0.0), 4.0,
-        Some("../planet_textures/moon_map.txt"), Color::cons(0, 0, 0)));
-    system.add_sphere(Sphere::cons(Vec3::cons(0.0, 1000.0, 0.0), 100.0,
-        Some("../planet_textures/jupiter_map.txt"), Color::cons(255, 246, 84)));
+    system.add_sphere(Sphere::cons(Vec3::cons(50.0, 65.0, -14.0), 6.0,
+        Some(MOONPATH), Color::cons(0, 0, 0), false));
+    system.add_sphere(Sphere::cons(Vec3::cons(-10.0, 30.0, 0.0), 15.0,
+        Some(JUPITERPATH), Color::cons(255, 246, 84), false));
+    system.add_sphere(Sphere::cons(Vec3::cons(50.0, 40.0, -10.0), 10.0,
+        Some(MARSPATH), Color::cons(0, 0, 0), false));
+    system.add_sphere(Sphere::cons(Vec3::cons(15.0, 30.0, 0.0), 4.0,
+        Some(SUNPATH), Color::cons(255, 246, 84), true));
+    let textures = TextureGlobal::new(&system);
 
     // ansi escape to clear terminal
     print!("\x1b[2J");

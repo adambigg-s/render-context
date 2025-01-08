@@ -4,7 +4,7 @@
 use std::fs::read_to_string;
 use std::io::{stdout, Write};
 
-use crate::{Float, Int, Sphere, System, ViewModel, ASCIIGRAD, LIGHT, PI, TAU};
+use crate::{Float, Int, Sphere, System, ViewModel, ASCIIGRAD, PI, TAU};
 use crate::math::Vec3;
 
 
@@ -13,7 +13,7 @@ pub struct Renderer<'d> {
     pub viewmodel: &'d ViewModel,
     pub buffer: &'d mut Buffer,
     pub system: &'d System,
-    pub globals: &'d TextureGlobal,
+    pub globals: &'d TextureGlobal<'d>,
 }
 
 impl<'d> Renderer<'d> {
@@ -65,8 +65,19 @@ impl<'d> Renderer<'d> {
                     if invx < self.buffer.depth[idx] { continue; }
                     let mut normal = worldframe - sphere.loc;
                     normal.normalize();
+                    let lumin = {
+                        if !sphere.lightsource {
+                            self.globals.lightsources.iter().map(|lightsource| {
+                                let mut light = *lightsource - worldframe;
+                                light.normalize();
+                                light.dot(&normal)
+                            }).sum::<Float>().min(1.0)
+                        }
+                        else {
+                            1.0
+                        }
+                    };
                     let mut color = self.map_texture(theta, phi, sphere);
-                    let lumin = self.luminosity(&normal);
                     color.lighting(lumin);
                     self.buffer.color[idx] = Some(color);
                     self.buffer.depth[idx] = invx;
@@ -76,13 +87,14 @@ impl<'d> Renderer<'d> {
     }
 
     fn map_texture(&self, theta: Float, phi: Float, sphere: &Sphere) -> Color {
-        let xfrac = theta / TAU;
-        let yfrac = phi / PI;
         if let Some(tex) = &sphere.texture {
+            let xfrac = theta / TAU;
+            let yfrac = phi / PI;
             let tx = (xfrac * (tex.width-1) as Float) as usize;
             let ty = (yfrac * (tex.height-1) as Float) as usize;
             tex.texture[ty * tex.width + tx]
-        } else {
+        }
+        else {
             sphere.color
         }
     }
@@ -90,10 +102,6 @@ impl<'d> Renderer<'d> {
     fn sphere_distance_square(&self, sphere: &Sphere) -> Float {
         let relative = sphere.loc - self.viewmodel.pos;
         relative.dot(&relative)
-    }
-
-    fn luminosity(&self, normal: &Vec3) -> Float {
-        self.globals.light.dot(normal).clamp(0.0, 1.0)
     }
 }
 
@@ -120,25 +128,29 @@ impl TextureData {
     }
 }
 
-pub struct TextureGlobal {
+pub struct TextureGlobal<'a> {
     pub _asciigrad: Vec<char>,
-    pub light: Vec3,
+    pub lightsources: Vec<Vec3>,
+    pub _system: &'a System,
 }
 
-impl TextureGlobal {
-    pub fn new() -> TextureGlobal {
+impl<'a> TextureGlobal<'a> {
+    pub fn new(_system: &'a System) -> TextureGlobal<'a> {
         let _asciigrad = ASCIIGRAD.chars().collect();
-        let mut light = Vec3::cons(LIGHT[0], LIGHT[1], LIGHT[2]);
-        light.normalize();
-        TextureGlobal { _asciigrad, light }
+
+        let mut lightsources = Vec::new();
+        for planet in &_system.spheres {
+            if planet.lightsource {
+                lightsources.push(planet.loc);
+            }
+        }
+        TextureGlobal { _asciigrad, lightsources, _system }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
-    red: u8,
-    green: u8,
-    blue: u8,
+    red: u8, green: u8, blue: u8,
 }
 
 impl Color {

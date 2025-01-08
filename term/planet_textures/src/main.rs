@@ -7,7 +7,7 @@ use image::{imageops::FilterType, GenericImageView};
 
 
 
-const PATH: &str = "jupiter_map.jpg";
+const PATH: &str = "sun_map.jpg";
 const MODE: Mode = Mode::Color;
 const WIDTHPRIME: u32 = 500;
 

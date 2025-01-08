@@ -39,6 +39,7 @@ impl ViewModel {
     fn translate(&mut self, dir: Vec3) {
         let speed = 2.0;
         let mut transdir = dir * speed;
+        transdir.rotatey(-self.tilt);
         transdir.rotatez(self.rot);
         self.pos = self.pos + transdir;
     }
@@ -66,17 +67,20 @@ pub struct Sphere {
     pub rad: Float,
     pub texture: Option<TextureData>,
     pub color: Color,
+    pub lightsource: bool
 }
 
 impl Sphere {
-    pub fn cons(loc: Vec3, rad: Float, texpath: Option<&str>, color: Color) -> Sphere {
+    pub fn cons(
+        loc: Vec3, rad: Float, texpath: Option<&str>, color: Color, lightsource: bool
+    ) -> Sphere {
         let texture;
         if let Some(path) = texpath {
             texture = Some(TextureData::from(path));
         } else {
             texture = None;
         }
-        Sphere { loc, rad, texture, color }
+        Sphere { loc, rad, texture, color, lightsource }
     }
 }
 

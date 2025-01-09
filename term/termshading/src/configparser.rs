@@ -3,8 +3,7 @@
 
 use std::{error::Error, fs::File, io::{self, BufRead, BufReader}};
 
-use crate::{entities::{Ring, SpacialReference}, utils::flash_error, Float, Int};
-use crate::utils::sleep;
+use crate::{entities::{Orbit, Ring, SpacialReference}, utils::flash_error, Float, Int};
 use crate::math::Vec3;
 use crate::entities::{Planet, System};
 
@@ -50,8 +49,10 @@ pub fn parse_config(file_path: &str, system: &mut System) -> io::Result<()> {
             }
         }
         else if line.starts_with("orbit") {
-            println!("it's working");
-            sleep(100);
+            match parse_orbit(&line) {
+                Ok(orbit) => system.add_orbit(orbit),
+                Err(err) => flash_error(err, 2000),
+            }
         }
         else if line.starts_with("ring") {
             match parse_ring(&line) {
@@ -92,6 +93,7 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
 
 fn parse_spaceref(data: &str) -> Result<SpacialReference, Box<dyn Error>> {
     let parts: Vec<&str> = data.split_whitespace().collect();
+    if parts.len() < 5 { return Err("not enough inputs: skipping spaceref".into()); }
     let length = parts[1].parse::<Float>()?;
     let (x, y, z) =
         (parts[2].parse::<Float>()?, parts[3].parse::<Float>()?, parts[4].parse::<Float>()?);
@@ -101,6 +103,7 @@ fn parse_spaceref(data: &str) -> Result<SpacialReference, Box<dyn Error>> {
 
 fn parse_ring(data: &str) -> Result<Ring, Box<dyn Error>> {
     let parts: Vec<&str> = data.split_whitespace().collect();
+    if parts.len() < 5 { return Err("not enough inputs: skipping ring".into()); }
     let rad = parts[1].parse::<Float>()?;
     let depth = parts[2].parse::<Float>()?;
     let distance = parts[3].parse::<Int>()?;
@@ -108,4 +111,19 @@ fn parse_ring(data: &str) -> Result<Ring, Box<dyn Error>> {
     let mut loc = Vec3::cons(distance, 0, 0);
     loc.rotatez(-theta);
     Ok(Ring::cons(loc, rad, depth, RINGPATH))
+}
+
+fn parse_orbit(data: &str) -> Result<Orbit, Box<dyn Error>> {
+    let parts: Vec<&str> = data.split_whitespace().collect();
+    if parts.len() < 8 { return Err("not enough inputs: skipping orbit".into()); }
+    let distance = parts[1].parse::<Int>()?;
+    let theta = parts[2].parse::<Float>()?.to_radians();
+    let mut loc = Vec3::cons(distance, 0, 0);
+    loc.rotatez(-theta);
+    let semimajor = parts[3].parse::<Float>()?;
+    let eccentricity = parts[4].parse::<Float>()?;
+    let inclination = parts[5].parse::<Float>()?;
+    let longofascendingnode = parts[6].parse::<Float>()?;
+    let argofperi = parts[7].parse::<Float>()?;
+    Ok(Orbit::cons(loc, semimajor, eccentricity, inclination, longofascendingnode, argofperi))
 }

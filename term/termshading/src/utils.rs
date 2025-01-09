@@ -11,8 +11,9 @@ use crate::ViewModel;
 
 pub fn print_debug(viewmodel: &ViewModel) {
     print!("\x1b[H");
-    println!("x: {:.2}, y: {:.2}, z: {:.2}, rot: {:.2}, tilt: {:.2}",
-        viewmodel.pos.x, viewmodel.pos.y, viewmodel.pos.z, viewmodel.rot, viewmodel.tilt
+    println!("x: {:.2}, y: {:.2}, z: {:.2}, rot: {:.2}, tilt: {:.2}, speed: {:.2}",
+        viewmodel.pos.x, viewmodel.pos.y, viewmodel.pos.z,
+        viewmodel.rot, viewmodel.tilt, viewmodel.transspeed
     );
     stdout().flush().unwrap();
 }
@@ -28,6 +29,8 @@ pub fn get_user_input() -> Vec<char> {
             match key_event.code {
                 KeyCode::Char('w') => inputs.push('w'),
                 KeyCode::Char('s') => inputs.push('s'),
+                KeyCode::Char('W') => inputs.push('W'),
+                KeyCode::Char('S') => inputs.push('S'),
                 KeyCode::Char('a') => inputs.push('a'),
                 KeyCode::Char('d') => inputs.push('d'),
                 KeyCode::Char('q') => inputs.push('q'),
@@ -39,6 +42,16 @@ pub fn get_user_input() -> Vec<char> {
                 KeyCode::Char('g') => inputs.push('g'),
                 KeyCode::Char('[') => inputs.push('['),
                 KeyCode::Char(']') => inputs.push(']'),
+                KeyCode::Char('1') => inputs.push('1'),
+                KeyCode::Char('2') => inputs.push('2'),
+                KeyCode::Char('3') => inputs.push('3'),
+                KeyCode::Char('4') => inputs.push('4'),
+                KeyCode::Char('5') => inputs.push('5'),
+                KeyCode::Char('6') => inputs.push('6'),
+                KeyCode::Char('7') => inputs.push('7'),
+                KeyCode::Char('8') => inputs.push('8'),
+                KeyCode::Char('9') => inputs.push('9'),
+                KeyCode::Char('0') => inputs.push('0'),
                 _ => {}
             }
         }

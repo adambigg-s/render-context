@@ -47,7 +47,7 @@ impl<'d> Renderer<'d> {
 
     fn render_ring(&mut self, ring: &Ring) {
         let distance = self.distance_square(&ring.loc).sqrt() - ring.rad;
-        if self.behind_view(&ring.loc) || distance > 500.0 { return; }
+        if self.behind_view(&ring.loc) || distance / ring.rad > 50.0 { return; }
         let thetadelta = (distance / (ring.rad * 200.0)).max(0.005);
         let gammadelta = (distance / (ring.depth * 200.0)).max(0.05);
         let thetastep = (TAU / thetadelta) as Int;
@@ -213,7 +213,7 @@ impl<'d> Renderer<'d> {
     }
 
     fn view_to_screen(&self, viewframe: &Vec3) -> (Int, Int) {
-        let (scalingx, scalingy) = (100.0, 48.0);
+        let (scalingx, scalingy) = (100.0, 50.0);
         let invx = 1.0 / viewframe.x;
         let (modx, mody) = (invx * scalingx, invx * scalingy);
         let screenx = (viewframe.y * modx + self.buffer.halfwidth() as Float) as Int;

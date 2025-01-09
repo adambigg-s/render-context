@@ -47,9 +47,9 @@ fn main() {
 
     // tui stuff
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let sun = Planet::cons(Vec3::cons(0, 0, 0), 50.0, Some(SUNPATH), None, true);
+    let sun = Planet::cons(Vec3::cons(0, 0, 0), 300.0, Some(SUNPATH), None, true);
     let mut system = System::from(sun);
-    let mut viewmodel = ViewModel::new(Vec3::cons(0, 100, 0));
+    let mut viewmodel = ViewModel::new(Vec3::cons(-70, 550, 100));
 
     parse_config(CONFIGPATH, &mut system).unwrap_or_else(|err| {
         println!("error parsing config: {}", err);

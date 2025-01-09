@@ -11,8 +11,8 @@ pub struct ViewModel {
     pub pos: Vec3,
     pub rot: Float,
     pub tilt: Float,
-    rotspeed: Float,
-    transspeed: Float,
+    pub rotspeed: Float,
+    pub transspeed: Float,
 }
 
 impl ViewModel {
@@ -23,18 +23,18 @@ impl ViewModel {
     pub fn react(&mut self, inputs: &[char]) {
         for input in inputs {
             match input {
-                'w' => self.translate(Vec3::cons(1.0, 0.0, 0.0)),
-                's' => self.translate(Vec3::cons(-1.0, 0.0, 0.0)),
-                'a' => self.translate(Vec3::cons(0.0, -1.0, 0.0)),
-                'd' => self.translate(Vec3::cons(0.0, 1.0, 0.0)),
-                'r' => self.translate(Vec3::cons(0.0, 0.0, 1.0)),
-                'f' => self.translate(Vec3::cons(0.0, 0.0, -1.0)),
+                'W' => self.translate(Vec3::cons(0, 0, 1)),
+                'S' => self.translate(Vec3::cons(0, 0, -1)),
+                'a' => self.translate(Vec3::cons(0, -1, 0)),
+                'd' => self.translate(Vec3::cons(0, 1, 0)),
+                'w' => self.translate(Vec3::cons(1, 0, 0)),
+                's' => self.translate(Vec3::cons(-1, 0, 0)),
                 'q' => self.rotate(-1.0),
                 'e' => self.rotate(1.0),
-                't' => self.tilt(1.0),
-                'g' => self.tilt(-1.0),
-                '[' => self.transspeed -= 0.5,
-                ']' => self.transspeed += 0.5,
+                'r' => self.tilt(1.0),
+                'f' => self.tilt(-1.0),
+                '[' => self.transspeed -= 0.25,
+                ']' => self.transspeed += 0.25,
                 _ => {}
             }
         }

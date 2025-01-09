@@ -3,7 +3,7 @@
 
 use std::{error::Error, fs::File, io::{self, BufRead, BufReader}};
 
-use crate::{entities::{Orbit, Ring, SpacialReference}, utils::flash_error, Float, Int};
+use crate::{entities::{Orbit, ObjectParams, Ring, SpacialReference}, utils::flash_error, Float, Int};
 use crate::math::Vec3;
 use crate::entities::{Planet, System};
 
@@ -85,10 +85,35 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
     let rad = parts[2].parse::<Float>()?;
     let distance = parts[3].parse::<Int>()?;
     let theta = parts[4].parse::<Float>()?.to_radians();
+    let inclination = if let Some(inclination) = parts.get(5) {
+        inclination.parse::<Float>()?.to_radians()
+    }
+    else {
+        0.0
+    };
     let mut loc = Vec3::cons(distance, 0, 0);
     loc.rotatez(-theta);
-    let lightsource = parts.len() == 6;
-    Ok(Planet::cons(loc, rad, texture, None, lightsource))
+    loc.rotatex(-inclination);
+    let tilt = if let Some(tilt) = parts.get(6) {
+        Some(tilt.parse::<Float>()?.to_radians())
+    }
+    else {
+        None
+    };
+    let rotation = if let Some(rotation) = parts.get(7) {
+        Some(rotation.parse::<Float>()?.to_radians())
+    }
+    else {
+        None
+    };
+    let params = if let (Some(tilt), Some(rotation)) = (tilt, rotation) {
+        Some(ObjectParams::cons(tilt, rotation))
+    }
+    else {
+        None
+    };
+    let name = parts[1].to_string();
+    Ok(Planet::cons(loc, rad, texture, None, false, params, name))
 }
 
 fn parse_spaceref(data: &str) -> Result<SpacialReference, Box<dyn Error>> {
@@ -108,9 +133,34 @@ fn parse_ring(data: &str) -> Result<Ring, Box<dyn Error>> {
     let depth = parts[2].parse::<Float>()?;
     let distance = parts[3].parse::<Int>()?;
     let theta = parts[4].parse::<Float>()?.to_radians();
+    let inclination = if let Some(inclination) = parts.get(5) {
+        inclination.parse::<Float>()?.to_radians()
+    }
+    else {
+        0.0
+    };
+    let tilt = if let Some(tilt) = parts.get(6) {
+        Some(tilt.parse::<Float>()?.to_radians())
+    }
+    else {
+        None
+    };
+    let rotation = if let Some(rotation) = parts.get(7) {
+        Some(rotation.parse::<Float>()?.to_radians())
+    }
+    else {
+        None
+    };
+    let params = if let (Some(tilt), Some(rotation)) = (tilt, rotation) {
+        Some(ObjectParams::cons(tilt, rotation))
+    }
+    else {
+        None
+    };
     let mut loc = Vec3::cons(distance, 0, 0);
     loc.rotatez(-theta);
-    Ok(Ring::cons(loc, rad, depth, RINGPATH))
+    loc.rotatex(-inclination);
+    Ok(Ring::cons(loc, rad, depth, RINGPATH, params))
 }
 
 fn parse_orbit(data: &str) -> Result<Orbit, Box<dyn Error>> {

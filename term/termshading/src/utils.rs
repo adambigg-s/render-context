@@ -11,7 +11,7 @@ use crate::ViewModel;
 
 pub fn print_debug(viewmodel: &ViewModel) {
     print!("\x1b[H");
-    println!("x: {:.2}, y: {:.2}, z: {:.2}, rot: {:.2}, tilt: {:.2}, speed: {:.2}",
+    print!("x: {:.2}, y: {:.2}, z: {:.2}, rot: {:.2}, tilt: {:.2}, speed: {:.2}",
         viewmodel.pos.x, viewmodel.pos.y, viewmodel.pos.z,
         viewmodel.rot, viewmodel.tilt, viewmodel.transspeed
     );

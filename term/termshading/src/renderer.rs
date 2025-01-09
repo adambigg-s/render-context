@@ -47,9 +47,9 @@ impl<'d> Renderer<'d> {
 
     fn render_ring(&mut self, ring: &Ring) {
         let distance = self.distance_square(&ring.loc).sqrt() - ring.rad;
-        if self.behind_view(&ring.loc) || distance / ring.rad > 50.0 { return; }
-        let thetadelta = (distance / (ring.rad * 200.0)).max(0.005);
-        let gammadelta = (distance / (ring.depth * 200.0)).max(0.05);
+        if self.behind_view(&ring.loc) || distance / ring.rad > 100.0 { return; }
+        let thetadelta = (distance / (ring.rad * 200.0)).max(0.01);
+        let gammadelta = (distance / (ring.depth * 10.0)).max(0.3);
         let thetastep = (TAU / thetadelta) as Int;
         let gammastep = (ring.depth / gammadelta) as Int;
 
@@ -59,7 +59,12 @@ impl<'d> Renderer<'d> {
                 let theta = thetamul as Float * thetadelta;
 
                 let rad = ring.rad + gamma;
-                let worldframe = Vec3::cons(rad * theta.cos(), rad * theta.sin(), 0.0) + ring.loc;
+                let mut worldframe = Vec3::cons(rad * theta.cos(), rad * theta.sin(), 0.0);
+                if let Some(params) = &ring.params {
+                    worldframe.rotatez(-params.rotation);
+                    worldframe.rotatex(-params.tilt);
+                }
+                worldframe += ring.loc;
 
                 let viewframe = self.world_to_view(&worldframe);
                 if viewframe.x <= 0.0 { continue; }
@@ -73,7 +78,6 @@ impl<'d> Renderer<'d> {
                 }
             }
         }
-        
     }
 
     fn render_orbit(&mut self, orbit: &Orbit) {
@@ -118,7 +122,6 @@ impl<'d> Renderer<'d> {
                 self.buffer.color[idx] = Some(color);
                 self.buffer.depth[idx] = viewframe.x;
             }
-
         }
     }
 
@@ -168,10 +171,15 @@ impl<'d> Renderer<'d> {
                 let (sint, cost) = theta.sin_cos();
                 let (sinp, cosp) = phi.sin_cos();
 
-                let spherex = planet.rad * cost * sinp + planet.loc.x;
-                let spherey = planet.rad * sint * sinp + planet.loc.y;
-                let spherez = planet.rad * cosp + planet.loc.z;
-                let worldframe = Vec3::cons(spherex, spherey, spherez);
+                let spherex = planet.rad * cost * sinp;
+                let spherey = planet.rad * sint * sinp;
+                let spherez = planet.rad * cosp;
+                let mut worldframe = Vec3::cons(spherex, spherey, spherez);
+                if let Some(params) = &planet.params {
+                    worldframe.rotatez(-params.rotation);
+                    worldframe.rotatex(-params.tilt);
+                }
+                worldframe += planet.loc;
 
                 let viewframe = self.world_to_view(&worldframe);
                 if viewframe.x <= 0.0 { continue; }
@@ -368,7 +376,7 @@ impl Buffer {
             }
             string.push_str("\x1b[0m");
         });
-        println!("{}", string);
+        print!("{}", string);
         stdout().flush().unwrap();
     }
 

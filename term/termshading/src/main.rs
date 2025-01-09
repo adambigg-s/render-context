@@ -47,7 +47,8 @@ fn main() {
 
     // tui stuff
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let sun = Planet::cons(Vec3::cons(0, 0, 0), 300.0, Some(SUNPATH), None, true);
+    let sun = Planet::cons(Vec3::cons(0, 0, 0), 300.0, Some(SUNPATH),
+        None, true, None, "sun".to_owned());
     let mut system = System::from(sun);
     let mut viewmodel = ViewModel::new(Vec3::cons(-70, 550, 100));
 
@@ -76,7 +77,7 @@ fn main() {
             renderer.render_orbits();
             renderer.render_rings();
             dump(renderer);
-            viewmodel.react(&inputs);
+            viewmodel.react(&inputs, &system);
             buffer.display();
         }
         else {
@@ -86,7 +87,7 @@ fn main() {
             debug_renderer.render_orbits();
             debug_renderer.render_rings();
             dump(debug_renderer);
-            viewmodel.react(&inputs);
+            viewmodel.react(&inputs, &system);
 
             if let Some(ref mut window) = window {
                 window.update_with_buffer(

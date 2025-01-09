@@ -17,10 +17,10 @@ pub struct ViewModel {
 
 impl ViewModel {
     pub fn new(pos: Vec3) -> ViewModel {
-        ViewModel { pos, rot: 0.0, tilt: 0.0, rotspeed: PI / 75.0, transspeed: 5.0 }
+        ViewModel { pos, rot: 0.0, tilt: 0.0, rotspeed: PI / 75.0, transspeed: 16.0 }
     }
 
-    pub fn react(&mut self, inputs: &[char]) {
+    pub fn react(&mut self, inputs: &[char], system: &System) {
         for input in inputs {
             match input {
                 'W' => self.translate(Vec3::cons(0, 0, 1)),
@@ -33,11 +33,30 @@ impl ViewModel {
                 'e' => self.rotate(1.0),
                 'r' => self.tilt(1.0),
                 'f' => self.tilt(-1.0),
-                '[' => self.transspeed -= 0.25,
-                ']' => self.transspeed += 0.25,
+                '[' => self.transspeed *= 0.5,
+                ']' => self.transspeed *= 2.0,
+                '1' => self.goto("mercury", system),
+                '2' => self.goto("venus", system),
+                '3' => self.goto("earth", system),
+                '4' => self.goto("mars", system),
+                '5' => self.goto("jupiter", system),
+                '6' => self.goto("saturn", system),
+                '7' => self.goto("uranus", system),
+                '8' => self.goto("neptune", system),
+                '9' => self.goto("pluto", system),
                 _ => {}
             }
         }
+    }
+
+    fn goto(&mut self, target: &str, system: &System) {
+        system.planets.iter().for_each(|planet| {
+            if planet.name == target {
+                self.pos = planet.loc + Vec3::cons(-100. - planet.rad, 0.0, 0.0);
+                self.tilt = 0.0;
+                self.rot = 0.0;
+            }
+        })
     }
 
     fn translate(&mut self, dir: Vec3) {
@@ -63,26 +82,36 @@ impl ViewModel {
     }
 }
 
+pub struct ObjectParams {
+    pub tilt: Float,
+    pub rotation: Float,
+}
+
+impl ObjectParams {
+    pub fn cons(tilt: Float, rotation: Float) -> ObjectParams {
+        ObjectParams { tilt, rotation }
+    }
+}
+
 pub struct Planet {
     pub loc: Vec3,
     pub rad: Float,
     pub texture: Option<TextureData>,
     pub color: Color,
-    pub lightsource: bool
+    pub lightsource: bool,
+    pub params: Option<ObjectParams>,
+    pub name: String,
+    pub orbits: Vec<Orbit>,
 }
 
 impl Planet {
     pub fn cons(
-        loc: Vec3, rad: Float, texpath: Option<&str>, color: Option<Color>, lightsource: bool
+        loc: Vec3, rad: Float, texpath: Option<&str>, color: Option<Color>,
+        lightsource: bool, params: Option<ObjectParams>, name: String,
     ) -> Planet {
-        let texture;
-        if let Some(path) = texpath {
-            texture = Some(TextureData::from(path));
-        } else {
-            texture = None;
-        }
+        let texture = texpath.map(TextureData::from);
         let color = if let Some(color) = color { color } else { Color::cons(0, 0, 0) };
-        Planet { loc, rad, texture, color, lightsource }
+        Planet { loc, rad, texture, color, lightsource, params, name, orbits: Vec::new() }
     }
 }
 
@@ -91,12 +120,15 @@ pub struct Ring {
     pub rad: Float,
     pub depth: Float,
     pub texture: TextureData,
+    pub params: Option<ObjectParams>,
 }
 
 impl Ring {
-    pub fn cons(loc: Vec3, rad: Float, depth: Float, texpath: &str) -> Ring {
+    pub fn cons(
+        loc: Vec3, rad: Float, depth: Float, texpath: &str, params: Option<ObjectParams>
+    ) -> Ring {
         let texture = TextureData::from(texpath);
-        Ring { loc, rad, depth, texture }
+        Ring { loc, rad, depth, texture, params }
     }
 }
 

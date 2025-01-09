@@ -4,7 +4,7 @@
 use std::fs::read_to_string;
 use std::io::{stdout, Write};
 
-use crate::entities::{Orbit, Ring, SpacialReference};
+use crate::entities::{Feature, Orbit, Ring, SpacialReference};
 use crate::{Float, Int, Planet, System, ViewModel, PI, TAU};
 use crate::math::Vec3;
 
@@ -28,26 +28,38 @@ impl<'d> Renderer<'d> {
     }
 
     pub fn render_rings(&mut self) {
-        self.system.rings.iter().for_each(|ring| {
-            self.render_ring(ring);
-        });
+        self.system.planets.iter().for_each(|planet| {
+            planet.features.iter().for_each(|feature| {
+                if let Feature::Ring(ring) = feature {
+                    self.render_ring(ring, planet);
+                }
+            })
+        })
     }
 
     pub fn render_orbits(&mut self) {
-        self.system.orbits.iter().for_each(|orbit| {
-            self.render_orbit(orbit);
+        self.system.planets.iter().for_each(|planet| {
+            planet.features.iter().for_each(|feature| {
+                if let Feature::Orbit(orbit) = feature {
+                    self.render_orbit(orbit, planet);
+                }
+            })
         });
     }
 
     pub fn render_spacerefs(&mut self) {
-        self.system.spacerefs.iter().for_each(|spaceref| {
-            self.render_spaceref(spaceref);
-        });
+        self.system.planets.iter().for_each(|planet| {
+            planet.features.iter().for_each(|feature| {
+                if let Feature::SpacialReference(spaceref) = feature {
+                    self.render_spaceref(spaceref, planet);
+                }
+            })
+        })
     }
 
-    fn render_ring(&mut self, ring: &Ring) {
-        let distance = self.distance_square(&ring.loc).sqrt() - ring.rad;
-        if self.behind_view(&ring.loc) || distance / ring.rad > 100.0 { return; }
+    fn render_ring(&mut self, ring: &Ring, planet: &Planet) {
+        let distance = self.distance_square(&planet.loc).sqrt() - ring.rad;
+        if self.behind_view(&planet.loc) || distance / ring.rad > 100.0 { return; }
         let thetadelta = (distance / (ring.rad * 200.0)).max(0.01);
         let gammadelta = (distance / (ring.depth * 10.0)).max(0.3);
         let thetastep = (TAU / thetadelta) as Int;
@@ -64,7 +76,7 @@ impl<'d> Renderer<'d> {
                     worldframe.rotatez(-params.rotation);
                     worldframe.rotatex(-params.tilt);
                 }
-                worldframe += ring.loc;
+                worldframe += planet.loc;
 
                 let viewframe = self.world_to_view(&worldframe);
                 if viewframe.x <= 0.0 { continue; }
@@ -80,9 +92,9 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn render_orbit(&mut self, orbit: &Orbit) {
-        let distance = self.distance_square(&orbit.loc).sqrt();
-        if self.behind_view(&orbit.loc) || distance > 100.0 { return; }
+    fn render_orbit(&mut self, orbit: &Orbit, planet: &Planet) {
+        let distance = self.distance_square(&planet.loc).sqrt();
+        if self.behind_view(&planet.loc) || distance > 100.0 { return; }
         let thetadelta = (distance / (orbit.semimajor * 170.0)).max(0.01);
         let thetastep = (TAU / thetadelta) as Int;
 
@@ -96,10 +108,10 @@ impl<'d> Renderer<'d> {
             let x = rad * theta.cos();
             let y = rad * theta.sin();
             let mut worldframe = Vec3::cons(x, y, 0.0);
-            worldframe.rotatez(orbit._longofascendingnode);
-            worldframe.rotatex(orbit._inclination);
-            worldframe.rotatez(orbit._argofperi);
-            worldframe += orbit.loc;
+            worldframe.rotatez(orbit.longofascnode);
+            worldframe.rotatex(orbit.inclination);
+            worldframe.rotatez(orbit.argofperi);
+            worldframe += planet.loc;
 
             let viewframe = self.world_to_view(&worldframe);
             if viewframe.x <= 0.0 { continue; }
@@ -108,7 +120,7 @@ impl<'d> Renderer<'d> {
 
             if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
                 if viewframe.x > self.buffer.depth[idx] { continue; }
-                let mut normal = worldframe - orbit.loc;
+                let mut normal = worldframe - planet.loc;
                 normal.normalize();
                 let luminance = {
                     self.system.lightsources.iter().map(|lightsource| {
@@ -125,25 +137,25 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn render_spaceref(&mut self, spaceref: &SpacialReference) {
-        let distance = self.distance_square(&spaceref.loc).sqrt();
-        if self.behind_view(&spaceref.loc) || distance > 100.0 { return; }
+    fn render_spaceref(&mut self, spaceref: &SpacialReference, planet: &Planet) {
+        let distance = self.distance_square(&planet.loc).sqrt();
+        if self.behind_view(&planet.loc) || distance > 100.0 { return; }
         let delta = 1.0 / 2.0;
         let deltastep = (spaceref.length / delta) as Int;
         
         for deltamul in 0..deltastep {
             let axisdelta = deltamul as Float * delta;
             self.axis_assistant(
-                spaceref, Vec3::cons(axisdelta, 0.0, 0.0), Color::cons(255, 10, 10));
+                planet.loc, Vec3::cons(axisdelta, 0.0, 0.0), Color::cons(255, 10, 10));
             self.axis_assistant(
-                spaceref, Vec3::cons(0.0, axisdelta, 0.0), Color::cons(10, 255, 10));
+                planet.loc, Vec3::cons(0.0, axisdelta, 0.0), Color::cons(10, 255, 10));
             self.axis_assistant(
-                spaceref, Vec3::cons(0.0, 0.0, axisdelta), Color::cons(10, 10, 255));
+                planet.loc, Vec3::cons(0.0, 0.0, axisdelta), Color::cons(10, 10, 255));
         }
     }
 
-    fn axis_assistant(&mut self, spaceref: &SpacialReference, delta: Vec3, color: Color) {
-        let worldframe = spaceref.loc + delta;
+    fn axis_assistant(&mut self, loc: Vec3, delta: Vec3, color: Color) {
+        let worldframe = loc + delta;
         let viewframe = self.world_to_view(&worldframe);
         if viewframe.x <= 0.0 { return; }
 
@@ -264,8 +276,9 @@ pub struct TextureData {
 
 impl TextureData {
     pub fn from(path: &str) -> TextureData {
-        let file = read_to_string(path).unwrap_or_else(|_|
-            panic!("unable to load texture {}", path));
+        let file = read_to_string(path).unwrap_or_else(|_| {
+            panic!("unable to load texture {}", path)
+        });
         let mut texture = Vec::new();
         let mut height = 0;
         let mut width = 0;
@@ -332,7 +345,7 @@ impl Buffer {
             height, width,
             visual: vec![' '; wi * he],
             color: vec![None; wi * he],
-            depth: vec![0.0; wi * he],
+            depth: vec![Float::MAX; wi * he],
         }
     }
 

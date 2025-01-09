@@ -52,7 +52,7 @@ impl ViewModel {
     fn goto(&mut self, target: &str, system: &System) {
         system.planets.iter().for_each(|planet| {
             if planet.name == target {
-                self.pos = planet.loc + Vec3::cons(-100. - planet.rad, 0.0, 0.0);
+                self.pos = planet.loc + Vec3::cons(-100.0 - planet.rad, 0.0, 0.0);
                 self.tilt = 0.0;
                 self.rot = 0.0;
             }
@@ -82,103 +82,97 @@ impl ViewModel {
     }
 }
 
-pub struct ObjectParams {
+pub struct PlanetParams {
     pub tilt: Float,
     pub rotation: Float,
 }
 
-impl ObjectParams {
-    pub fn cons(tilt: Float, rotation: Float) -> ObjectParams {
-        ObjectParams { tilt, rotation }
+impl PlanetParams {
+    pub fn cons(tilt: Float, rotation: Float) -> PlanetParams {
+        PlanetParams { tilt, rotation }
     }
 }
 
 pub struct Planet {
+    pub name: String,
     pub loc: Vec3,
     pub rad: Float,
     pub texture: Option<TextureData>,
     pub color: Color,
     pub lightsource: bool,
-    pub params: Option<ObjectParams>,
-    pub name: String,
-    pub orbits: Vec<Orbit>,
+    pub params: Option<PlanetParams>,
+    pub features: Vec<Feature>,
 }
 
 impl Planet {
     pub fn cons(
-        loc: Vec3, rad: Float, texpath: Option<&str>, color: Option<Color>,
-        lightsource: bool, params: Option<ObjectParams>, name: String,
+        name: String, loc: Vec3, rad: Float, texpath: Option<&str>, color: Option<Color>,
+        lightsource: bool, params: Option<PlanetParams>
     ) -> Planet {
         let texture = texpath.map(TextureData::from);
         let color = if let Some(color) = color { color } else { Color::cons(0, 0, 0) };
-        Planet { loc, rad, texture, color, lightsource, params, name, orbits: Vec::new() }
+        Planet { name, loc, rad, texture, color, lightsource, params, features: Vec::new() }
+    }
+}
+
+pub enum Feature {
+    Orbit(Orbit),
+    Ring(Ring),
+    SpacialReference(SpacialReference),
+    Moon(Planet),
+}
+
+pub struct Orbit {
+    pub semimajor: Float,
+    pub eccentricity: Float,
+    pub inclination: Float,
+    pub longofascnode: Float,
+    pub argofperi: Float,
+}
+
+impl Orbit {
+    pub fn cons(semimajor: Float, eccentricity: Float, inclination: Float,
+        longofascendingnode: Float, argofperi: Float
+    ) -> Orbit {
+        Orbit {
+            semimajor, eccentricity, inclination, longofascnode: longofascendingnode, argofperi
+        }
     }
 }
 
 pub struct Ring {
-    pub loc: Vec3,
     pub rad: Float,
     pub depth: Float,
     pub texture: TextureData,
-    pub params: Option<ObjectParams>,
+    pub params: Option<PlanetParams>,
 }
 
 impl Ring {
-    pub fn cons(
-        loc: Vec3, rad: Float, depth: Float, texpath: &str, params: Option<ObjectParams>
-    ) -> Ring {
+    pub fn cons(rad: Float, depth: Float, texpath: &str, params: Option<PlanetParams>) -> Ring {
         let texture = TextureData::from(texpath);
-        Ring { loc, rad, depth, texture, params }
+        Ring { rad, depth, texture, params }
     }
 }
 
 pub struct SpacialReference {
-    pub loc: Vec3,
     pub length: Float,
 }
 
 impl SpacialReference {
-    pub fn cons(loc: Vec3, length: Float) -> SpacialReference {
-        SpacialReference { loc, length }
-    }
-}
-
-pub struct Orbit {
-    pub loc: Vec3,
-    pub semimajor: Float,
-    pub eccentricity: Float,
-    pub _inclination: Float,
-    pub _longofascendingnode: Float,
-    pub _argofperi: Float,
-}
-
-impl Orbit {
-    pub fn cons(
-        loc: Vec3, semimajor: Float, eccentricity: Float, inclination: Float,
-        longofascendingnode: Float, argofperi: Float
-    ) -> Orbit {
-        Orbit {
-            loc, semimajor, eccentricity, _inclination: inclination,
-            _longofascendingnode: longofascendingnode, _argofperi: argofperi
-        }
+    pub fn cons(length: Float) -> SpacialReference {
+        SpacialReference { length }
     }
 }
 
 pub struct System {
     pub planets: Vec<Planet>,
-    pub spacerefs: Vec<SpacialReference>,
-    pub orbits: Vec<Orbit>,
-    pub rings: Vec<Ring>,
     pub lightsources: Vec<Vec3>,
 }
 
 impl System {
-    pub fn from(sphere: Planet) -> System {
-        let source = sphere.loc;
-        System {
-            planets: vec![sphere], spacerefs: Vec::new(), orbits: Vec::new(),
-            rings: Vec::new(), lightsources: vec![source],
-        }
+    pub fn from(planet: Planet) -> System {
+        let source = planet.loc;
+        System { planets: vec![planet], lightsources: vec![source] }
     }
 
     pub fn add_planet(&mut self, planet: Planet) {
@@ -188,15 +182,21 @@ impl System {
         self.planets.push(planet);
     }
 
-    pub fn add_spaceref(&mut self, spaceref: SpacialReference) {
-        self.spacerefs.push(spaceref);
+    pub fn add_spaceref(&mut self, target: &str, spaceref: SpacialReference) {
+        if let Some(planet) = self.planets.iter_mut().find(|planet| planet.name == target) {
+            planet.features.push(Feature::SpacialReference(spaceref));
+        }
     }
 
-    pub fn add_orbit(&mut self, ellipse: Orbit) {
-        self.orbits.push(ellipse);
+    pub fn add_orbit(&mut self, target: &str, orbit: Orbit) {
+        if let Some(planet) = self.planets.iter_mut().find(|planet| planet.name == target) {
+            planet.features.push(Feature::Orbit(orbit));
+        }
     }
 
-    pub fn add_ring(&mut self, ring: Ring) {
-        self.rings.push(ring);
+    pub fn add_ring(&mut self, target: &str, ring: Ring) {
+        if let Some(planet) = self.planets.iter_mut().find(|planet| planet.name == target) {
+            planet.features.push(Feature::Ring(ring));
+        }
     }
 }

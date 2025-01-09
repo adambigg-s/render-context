@@ -47,8 +47,8 @@ fn main() {
 
     // tui stuff
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let sun = Planet::cons(Vec3::cons(0, 0, 0), 300.0, Some(SUNPATH),
-        None, true, None, "sun".to_owned());
+    let sun = Planet::cons("sun".to_owned(), Vec3::cons(0, 0, 0), 300.0,
+        Some(SUNPATH), None, true, None);
     let mut system = System::from(sun);
     let mut viewmodel = ViewModel::new(Vec3::cons(-70, 550, 100));
 

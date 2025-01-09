@@ -3,7 +3,8 @@
 
 use std::{error::Error, fs::File, io::{self, BufRead, BufReader}};
 
-use crate::{entities::{Orbit, ObjectParams, Ring, SpacialReference}, utils::flash_error, Float, Int};
+use crate::{entities::Orbit, utils::flash_error, Float, Int};
+use crate::entities::{PlanetParams, Ring, SpacialReference};
 use crate::math::Vec3;
 use crate::entities::{Planet, System};
 
@@ -107,7 +108,7 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
         None
     };
     let params = if let (Some(tilt), Some(rotation)) = (tilt, rotation) {
-        Some(ObjectParams::cons(tilt, rotation))
+        Some(PlanetParams::cons(tilt, rotation))
     }
     else {
         None
@@ -152,7 +153,7 @@ fn parse_ring(data: &str) -> Result<Ring, Box<dyn Error>> {
         None
     };
     let params = if let (Some(tilt), Some(rotation)) = (tilt, rotation) {
-        Some(ObjectParams::cons(tilt, rotation))
+        Some(PlanetParams::cons(tilt, rotation))
     }
     else {
         None

@@ -48,7 +48,7 @@ fn main() {
     // tui stuff
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
     let sun = Planet::cons("sun".to_owned(), Vec3::cons(0, 0, 0), 300.0,
-        Some(SUNPATH), None, true, None);
+        Some(SUNPATH), true, None);
     let mut system = System::from(sun);
     let mut viewmodel = ViewModel::new(Vec3::cons(-70, 550, 100));
 
@@ -56,7 +56,8 @@ fn main() {
         println!("error parsing config: {}", err);
         panic!();
     });
-
+    viewmodel.goto("earth", &system);
+    
     // ansi escape to clear terminal
     print!("\x1b[2J");
     // ansi escape to make cursor-line invisible for program

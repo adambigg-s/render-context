@@ -139,23 +139,28 @@ impl<'d> Renderer<'d> {
 
     fn render_spaceref(&mut self, spaceref: &SpacialReference, planet: &Planet) {
         let distance = self.distance_square(&planet.loc).sqrt();
-        if self.behind_view(&planet.loc) || distance > 100.0 { return; }
+        if self.behind_view(&planet.loc) || distance > spaceref.length * 20.0 { return; }
         let delta = 1.0 / 2.0;
         let deltastep = (spaceref.length / delta) as Int;
         
         for deltamul in 0..deltastep {
             let axisdelta = deltamul as Float * delta;
             self.axis_assistant(
-                planet.loc, Vec3::cons(axisdelta, 0.0, 0.0), Color::cons(255, 10, 10));
+                planet, Vec3::cons(axisdelta, 0.0, 0.0), Color::cons(255, 10, 10));
             self.axis_assistant(
-                planet.loc, Vec3::cons(0.0, axisdelta, 0.0), Color::cons(10, 255, 10));
+                planet, Vec3::cons(0.0, axisdelta, 0.0), Color::cons(10, 255, 10));
             self.axis_assistant(
-                planet.loc, Vec3::cons(0.0, 0.0, axisdelta), Color::cons(10, 10, 255));
+                planet, Vec3::cons(0.0, 0.0, axisdelta), Color::cons(10, 10, 255));
         }
     }
 
-    fn axis_assistant(&mut self, loc: Vec3, delta: Vec3, color: Color) {
-        let worldframe = loc + delta;
+    fn axis_assistant(&mut self, planet: &Planet, delta: Vec3, color: Color) {
+        let mut worldframe = delta;
+        if let Some(params) = &planet.params {
+            worldframe.rotatex(-params.tilt);
+            worldframe.rotatez(-params.rotation);
+        }
+        worldframe += planet.loc;
         let viewframe = self.world_to_view(&worldframe);
         if viewframe.x <= 0.0 { return; }
 
@@ -188,8 +193,8 @@ impl<'d> Renderer<'d> {
                 let spherez = planet.rad * cosp;
                 let mut worldframe = Vec3::cons(spherex, spherey, spherez);
                 if let Some(params) = &planet.params {
-                    worldframe.rotatez(-params.rotation);
                     worldframe.rotatex(-params.tilt);
+                    worldframe.rotatez(-params.rotation);
                 }
                 worldframe += planet.loc;
 
@@ -253,7 +258,7 @@ impl<'d> Renderer<'d> {
             tex.texture[ty * tex.width + tx]
         }
         else {
-            planet.color
+            Color::cons(0, 250, 250)
         }
     }
 

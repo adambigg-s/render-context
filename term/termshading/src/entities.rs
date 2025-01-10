@@ -1,7 +1,7 @@
 
 
 
-use crate::renderer::{Color, TextureData};
+use crate::renderer::TextureData;
 use crate::{Float, PI, TAU};
 use crate::math::Vec3;
 
@@ -49,7 +49,7 @@ impl ViewModel {
         }
     }
 
-    fn goto(&mut self, target: &str, system: &System) {
+    pub fn goto(&mut self, target: &str, system: &System) {
         system.planets.iter().for_each(|planet| {
             if planet.name == target {
                 self.pos = planet.loc + Vec3::cons(-100.0 - planet.rad, 0.0, 0.0);
@@ -98,7 +98,6 @@ pub struct Planet {
     pub loc: Vec3,
     pub rad: Float,
     pub texture: Option<TextureData>,
-    pub color: Color,
     pub lightsource: bool,
     pub params: Option<PlanetParams>,
     pub features: Vec<Feature>,
@@ -106,12 +105,11 @@ pub struct Planet {
 
 impl Planet {
     pub fn cons(
-        name: String, loc: Vec3, rad: Float, texpath: Option<&str>, color: Option<Color>,
+        name: String, loc: Vec3, rad: Float, texpath: Option<&str>,
         lightsource: bool, params: Option<PlanetParams>
     ) -> Planet {
         let texture = texpath.map(TextureData::from);
-        let color = if let Some(color) = color { color } else { Color::cons(0, 0, 0) };
-        Planet { name, loc, rad, texture, color, lightsource, params, features: Vec::new() }
+        Planet { name, loc, rad, texture, lightsource, params, features: Vec::new() }
     }
 }
 
@@ -169,6 +167,7 @@ pub struct System {
     pub lightsources: Vec<Vec3>,
 }
 
+#[allow(dead_code)]
 impl System {
     pub fn from(planet: Planet) -> System {
         let source = planet.loc;
@@ -180,6 +179,12 @@ impl System {
             self.lightsources.push(planet.loc);
         }
         self.planets.push(planet);
+    }
+
+    pub fn add_feature(&mut self, target: &str, feature: Feature) {
+        if let Some(planet) = self.planets.iter_mut().find(|planet| planet.name == target) {
+            planet.features.push(feature);
+        }
     }
 
     pub fn add_spaceref(&mut self, target: &str, spaceref: SpacialReference) {

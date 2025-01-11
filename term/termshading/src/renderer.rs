@@ -33,8 +33,8 @@ impl<'d> Renderer<'d> {
                 if let Feature::Ring(ring) = feature {
                     self.render_ring(ring, planet);
                 }
-            })
-        })
+            });
+        });
     }
 
     pub fn render_orbits(&mut self) {
@@ -43,7 +43,7 @@ impl<'d> Renderer<'d> {
                 if let Feature::Orbit(orbit) = feature {
                     self.render_orbit(orbit, planet);
                 }
-            })
+            });
         });
     }
 
@@ -53,8 +53,8 @@ impl<'d> Renderer<'d> {
                 if let Feature::SpacialReference(spaceref) = feature {
                     self.render_spaceref(spaceref, planet);
                 }
-            })
-        })
+            });
+        });
     }
 
     fn render_ring(&mut self, ring: &Ring, planet: &Planet) {
@@ -94,7 +94,7 @@ impl<'d> Renderer<'d> {
 
     fn render_orbit(&mut self, orbit: &Orbit, planet: &Planet) {
         let distance = self.distance_square(&planet.loc).sqrt();
-        if self.behind_view(&planet.loc) || distance > 100.0 { return; }
+        if self.behind_view(&planet.loc) || distance > 1000.0 { return; }
         let thetadelta = (distance / (orbit.semimajor * 170.0)).max(0.01);
         let thetastep = (TAU / thetadelta) as Int;
 
@@ -301,7 +301,7 @@ impl TextureData {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Color {
-    red: u8, green: u8, blue: u8,
+    pub red: u8, pub green: u8, pub blue: u8,
 }
 
 impl Color {

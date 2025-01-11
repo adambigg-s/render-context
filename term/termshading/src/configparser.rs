@@ -72,6 +72,12 @@ pub fn parse_config(file_path: &str, system: &mut System) -> io::Result<()> {
                 Err(err) => flash_error(err, 2000),
             }
         }
+        else if line.starts_with("moon") {
+            match parse_moon(&line) {
+                Ok(targfeat) => system.add_feature(targfeat.target, targfeat.feature),
+                Err(err) => flash_error(err, 2000),
+            }
+        }
     }
 
     Ok(())
@@ -107,6 +113,14 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
                     let y = split[1].parse::<Int>()?;
                     let z = split[2].parse::<Int>()?;
                     loc = Some(Vec3::cons(x, y, z));
+                }
+                "polar" => {
+                    let split: Vec<&str> = value.split(',').collect();
+                    let dist = split[0].parse::<Int>()?;
+                    let theta = split[1].parse::<Float>()?.to_radians();
+                    let mut vec = Vec3::cons(dist, 0, 0);
+                    vec.rotatez(-theta);
+                    loc = Some(vec);
                 }
                 "orbital" => {
                     let split: Vec<&str> = value.split(',').collect();
@@ -190,9 +204,9 @@ fn parse_orbit(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
                 let split: Vec<&str> = value.split(',').collect();
                 semimajor = Some(split[0].parse::<Float>()?);
                 eccentricity = split[1].parse::<Float>()?;
-                inclination = split[2].parse::<Float>()?;
-                longofascendingnode = split[3].parse::<Float>()?;
-                argofperi = split[4].parse::<Float>()?;
+                inclination = split[2].parse::<Float>()?.to_radians();
+                longofascendingnode = split[3].parse::<Float>()?.to_radians();
+                argofperi = split[4].parse::<Float>()?.to_radians();
             }
         }
     }
@@ -251,6 +265,10 @@ fn parse_ring(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
     else {
         Err("error parsing ring".into())
     }
+}
+
+fn parse_moon(_data: &str) -> Result<TargetFeature, Box<dyn Error>> {
+    todo!()
 }
 
 fn get_texture(name: &str) -> Option<&str> {

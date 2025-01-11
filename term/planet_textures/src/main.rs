@@ -7,7 +7,8 @@ use image::{imageops::FilterType, GenericImageView};
 
 
 
-const PATH: [&str; 10] = [
+const PATH: [&str; 11] = [
+    "sky_map.jpg",
     "mercury_map.jpg",
     "venus_map.jpg",
     "earth_map.jpg",

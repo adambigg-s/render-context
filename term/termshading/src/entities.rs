@@ -61,8 +61,8 @@ impl ViewModel {
 
     fn translate(&mut self, dir: Vec3) {
         let mut transdir = dir * self.transspeed;
-        transdir.rotatey(-self.tilt);
-        transdir.rotatez(self.rot);
+        let rotation = Vec3::cons(0.0, -self.tilt, self.rot);
+        transdir.rotationmatxyz(rotation);
         self.pos += transdir;
     }
 
@@ -117,7 +117,7 @@ pub enum Feature {
     Orbit(Orbit),
     Ring(Ring),
     SpacialReference(SpacialReference),
-    Moon(Planet),
+    _Moon(Planet),
 }
 
 pub struct Orbit {
@@ -182,8 +182,11 @@ impl System {
     }
 
     pub fn add_feature(&mut self, target: &str, feature: Feature) {
-        if let Some(planet) = self.planets.iter_mut().find(|planet| planet.name == target) {
-            planet.features.push(feature);
+        match feature {
+            Feature::SpacialReference(spaceref) => self.add_spaceref(target, spaceref),
+            Feature::Ring(ring) => self.add_ring(target, ring),
+            Feature::Orbit(orbit) => self.add_orbit(target, orbit),
+            Feature::_Moon(moon) => self.add_moon(target, moon),
         }
     }
 
@@ -203,5 +206,9 @@ impl System {
         if let Some(planet) = self.planets.iter_mut().find(|planet| planet.name == target) {
             planet.features.push(Feature::Ring(ring));
         }
+    }
+
+    pub fn add_moon(&mut self, _target: &str, _moon: Planet) {
+        todo!();
     }
 }

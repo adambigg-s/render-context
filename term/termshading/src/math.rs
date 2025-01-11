@@ -4,7 +4,7 @@
 
 use std::ops::{Add, AddAssign, Mul, Sub};
 
-use crate::{Float, Int};
+use crate::{entities::Orbit, Float, Int};
 
 
 
@@ -104,6 +104,27 @@ impl Mul<Float> for Vec3 {
     fn mul(self, rhs: Float) -> Vec3 {
         Vec3::cons(self.x * rhs, self.y * rhs, self.z * rhs)
     }
+}
+
+pub fn orbital_cartesian_transformation(orbit: &Orbit) -> Vec3 {
+    let Orbit {
+        semimajor,
+        eccentricity,
+        inclination,
+        longitudeascnode,
+        argofperiapsis,
+        trueanomaly
+    } = *orbit;
+
+    let radius = semimajor
+        * (1.0 - eccentricity * eccentricity)
+        / (1.0 + eccentricity * trueanomaly.cos());
+    
+    let mut vec = Vec3::cons(radius * trueanomaly.cos(), radius * trueanomaly.sin(), 0.0);
+    vec.rotatez(-argofperiapsis);
+    vec.rotatex(inclination);
+    vec.rotatez(-longitudeascnode);
+    vec
 }
 
 

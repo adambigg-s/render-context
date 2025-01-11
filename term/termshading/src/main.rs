@@ -12,7 +12,7 @@ mod configparser;
 
 use minifb::{Window, WindowOptions};
 
-use crate::configparser::{parse_config, SUNPATH};
+use crate::configparser::{general_config, parse_config, Config, SUNPATH};
 use crate::renderer::{Buffer, Renderer};
 use crate::math::Vec3;
 use crate::entities::{Planet, System, ViewModel};
@@ -20,11 +20,10 @@ use crate::utils::{dump, get_user_input, print_debug, sleep};
 
 
 
-const HEIGHT: Int = 60;
-const WIDTH: Int = 240;
 const TAU: Float = 6.2831855;
 const PI: Float = 3.1415925;
-const CONFIGPATH: &str = "config.config";
+const SYSTEMCONFIG: &str = "systemconfig.config";
+const CONFIG: &str = "config.config";
 
 
 
@@ -45,14 +44,19 @@ fn main() {
     }
     let mut debug_buffer = Buffer::cons(400, 400);
 
+    let mut config: Config = general_config(CONFIG).unwrap_or_else(|err| {
+        println!("error parsing config: {}", err);
+        panic!();
+    });
+
     // tui stuff
-    let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let sun = Planet::cons("sun".to_owned(), Vec3::cons(0, 0, 0), 300.0,
+    let mut buffer = Buffer::cons(config.height(), config.width());
+    let sun = Planet::cons("sun".to_owned(), Vec3::cons(0, 0, 0), 100.0,
         Some(SUNPATH), true, None);
     let mut system = System::from(sun);
-    let mut viewmodel = ViewModel::new(Vec3::cons(-70, 550, 100));
+    let mut viewmodel = ViewModel::new(Vec3::cons(0, 0, 0));
 
-    parse_config(CONFIGPATH, &mut system).unwrap_or_else(|err| {
+    parse_config(SYSTEMCONFIG, &mut system).unwrap_or_else(|err| {
         println!("error parsing config: {}", err);
         panic!();
     });
@@ -69,16 +73,20 @@ fn main() {
             break;
         }
 
-        let mut renderer = Renderer::cons(&viewmodel, &mut buffer, &system);
-        let mut debug_renderer = Renderer::cons(&viewmodel, &mut debug_buffer, &system);
+        let mut renderer = Renderer::cons(&viewmodel, &mut buffer, &system, &config);
+        let mut debug_renderer = Renderer::cons(&viewmodel, &mut debug_buffer, &system, &config);
         if !debug {
             renderer.buffer.clear();
             renderer.render_planets();
-            renderer.render_spacerefs();
-            renderer.render_orbits();
+            if config.render_refs() {
+                renderer.render_spacerefs();
+            }
+            if config.render_orbits() {
+                renderer.render_orbits();
+            }
             renderer.render_rings();
             dump(renderer);
-            viewmodel.react(&inputs, &system);
+            viewmodel.react(&inputs, &system, &mut config);
             buffer.display();
         }
         else {
@@ -88,7 +96,7 @@ fn main() {
             debug_renderer.render_orbits();
             debug_renderer.render_rings();
             dump(debug_renderer);
-            viewmodel.react(&inputs, &system);
+            viewmodel.react(&inputs, &system, &mut config);
 
             if let Some(ref mut window) = window {
                 window.update_with_buffer(

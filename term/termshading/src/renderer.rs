@@ -4,7 +4,8 @@
 use std::fs::read_to_string;
 use std::io::{stdout, Write};
 
-use crate::entities::{Feature, Orbit, Ring, SpacialReference};
+use crate::configparser::Config;
+use crate::entities::{Feature, Orbit, PlanetParams, Ring, SpacialReference};
 use crate::{Float, Int, Planet, System, ViewModel, PI, TAU};
 use crate::math::Vec3;
 
@@ -14,11 +15,14 @@ pub struct Renderer<'d> {
     pub viewmodel: &'d ViewModel,
     pub buffer: &'d mut Buffer,
     pub system: &'d System,
+    pub config: &'d Config,
 }
 
 impl<'d> Renderer<'d> {
-    pub fn cons(view: &'d ViewModel, buff: &'d mut Buffer, sys: &'d System) -> Renderer<'d> {
-        Renderer { viewmodel: view, buffer: buff, system: sys }
+    pub fn cons(
+        view: &'d ViewModel, buff: &'d mut Buffer, sys: &'d System, config: &'d Config
+    ) -> Renderer<'d> {
+        Renderer { viewmodel: view, buffer: buff, system: sys, config }
     }
 
     pub fn render_planets(&mut self) {
@@ -73,20 +77,19 @@ impl<'d> Renderer<'d> {
                 let rad = ring.rad + gamma;
                 let mut worldframe = Vec3::cons(rad * theta.cos(), rad * theta.sin(), 0.0);
                 if let Some(params) = &ring.params {
-                    worldframe.rotatez(-params.rotation);
-                    worldframe.rotatex(-params.tilt);
+                    self.apply_param_transformations(&mut worldframe, params);
                 }
                 worldframe += planet.loc;
 
                 let viewframe = self.world_to_view(&worldframe);
                 if viewframe.x <= 0.0 { continue; }
-
                 let (screenx, screeny) = self.view_to_screen(&viewframe);
 
                 if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
                     if viewframe.x >= self.buffer.depth[idx] { continue; }
-                    self.buffer.color[idx] = Some(self.map_texture_ring(theta, gamma, ring));
-                    self.buffer.depth[idx] = viewframe.x;
+                    
+                    let color = self.map_texture_ring(theta, gamma, ring);
+                    self.buffer.set(idx, color, viewframe.x, None);
                 }
             }
         }
@@ -108,31 +111,27 @@ impl<'d> Renderer<'d> {
             let x = rad * theta.cos();
             let y = rad * theta.sin();
             let mut worldframe = Vec3::cons(x, y, 0.0);
-            worldframe.rotatez(orbit.longofascnode);
-            worldframe.rotatex(orbit.inclination);
-            worldframe.rotatez(orbit.argofperi);
+            let rotations = Vec3::cons(orbit.longitudeascnode, orbit.inclination, orbit.argofperiapsis);
+            worldframe.rotationmatzyx(rotations);
             worldframe += planet.loc;
 
             let viewframe = self.world_to_view(&worldframe);
             if viewframe.x <= 0.0 { continue; }
-
             let (screenx, screeny) = self.view_to_screen(&viewframe);
 
             if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
                 if viewframe.x > self.buffer.depth[idx] { continue; }
                 let mut normal = worldframe - planet.loc;
                 normal.normalize();
-                let luminance = {
-                    self.system.lightsources.iter().map(|lightsource| {
-                        let mut light = *lightsource - worldframe;
-                        light.normalize();
-                        light.inner_prod(&normal).max(0.0)
-                    }).sum::<Float>().min(1.0)
-                };
+                let luminance = self.generalize_luminance(worldframe, normal);
                 let mut color = Color::cons(204, 174, 6);
-                color.lighting(luminance);
-                self.buffer.color[idx] = Some(color);
-                self.buffer.depth[idx] = viewframe.x;
+                if (theta - orbit.trueanomaly).abs() < 0.05 {
+                    color = Color::cons(0, 255, 255);
+                }
+                else {
+                    color.lighting(luminance);
+                }
+                self.buffer.set(idx, color, viewframe.x, None);
             }
         }
     }
@@ -163,12 +162,11 @@ impl<'d> Renderer<'d> {
         worldframe += planet.loc;
         let viewframe = self.world_to_view(&worldframe);
         if viewframe.x <= 0.0 { return; }
-
         let (screenx, screeny) = self.view_to_screen(&viewframe);
+        
         if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
             if viewframe.x > self.buffer.depth[idx] { return; }
-            self.buffer.color[idx] = Some(color);
-            self.buffer.depth[idx] = viewframe.x;
+            self.buffer.set(idx, color, viewframe.x, None);
         }
     }
 
@@ -193,41 +191,43 @@ impl<'d> Renderer<'d> {
                 let spherez = planet.rad * cosp;
                 let mut worldframe = Vec3::cons(spherex, spherey, spherez);
                 if let Some(params) = &planet.params {
-                    worldframe.rotatex(-params.tilt);
-                    worldframe.rotatez(-params.rotation);
+                    self.apply_param_transformations(&mut worldframe, params);
                 }
                 worldframe += planet.loc;
 
                 let viewframe = self.world_to_view(&worldframe);
                 if viewframe.x <= 0.0 { continue; }
-
                 let (screenx, screeny) = self.view_to_screen(&viewframe);
 
                 if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
                     if viewframe.x > self.buffer.depth[idx] { continue; }
                     let mut normal = worldframe - planet.loc;
                     normal.normalize();
-                    // this is super ugly, probably change later but it works
-                    let luminance = {
-                        if !planet.lightsource {
-                            self.system.lightsources.iter().map(|lightsource| {
-                                let mut light = *lightsource - worldframe;
-                                light.normalize();
-                                light.inner_prod(&normal).max(0.0)
-                            }).sum::<Float>().min(1.0)
-                        }
-                        else {
-                            // luminance should be maximum if body is source of light, dot !> 0
-                            1.0
-                        }
-                    };
+                    let luminance = self.body_luminance(planet, worldframe, normal);
                     let mut color = self.map_texture(theta, phi, planet);
                     color.lighting(luminance);
-                    self.buffer.color[idx] = Some(color);
-                    self.buffer.depth[idx] = viewframe.x;
+                    self.buffer.set(idx, color, viewframe.x, None);
                 }
             }
         }
+    }
+
+    fn body_luminance(&mut self, planet: &Planet, worldframe: Vec3, normal: Vec3) -> f32 {
+        if planet.lightsource { return 1.0 }
+        self.generalize_luminance(worldframe, normal)
+    }
+
+    fn generalize_luminance(&mut self, worldframe: Vec3, normal: Vec3) -> f32 {
+        self.system.lightsources.iter().map(|lightsource| {
+            let mut light = *lightsource - worldframe;
+            light.normalize();
+            light.inner_prod(&normal).max(0.0)
+        }).sum::<Float>().min(1.0)
+    }
+
+    fn apply_param_transformations(&self, worldframe: &mut Vec3, params: &PlanetParams) {
+        worldframe.rotatez(-params.rotation);
+        worldframe.rotatex(-params.tilt);
     }
 
     fn world_to_view(&self, worldframe: &Vec3) -> Vec3 {
@@ -238,9 +238,8 @@ impl<'d> Renderer<'d> {
     }
 
     fn view_to_screen(&self, viewframe: &Vec3) -> (Int, Int) {
-        let (scalingx, scalingy) = (100.0, 50.0);
         let invx = 1.0 / viewframe.x;
-        let (modx, mody) = (invx * scalingx, invx * scalingy);
+        let (modx, mody) = (invx * self.config.fov() * 2.0, invx * self.config.fov());
         let screenx = (viewframe.y * modx + self.buffer.halfwidth() as Float) as Int;
         let screeny = (viewframe.z * mody + self.buffer.halfheight() as Float) as Int;
         (screenx, screeny)
@@ -255,7 +254,7 @@ impl<'d> Renderer<'d> {
         if let Some(tex) = &planet.texture {
             let tx = (theta / TAU * (tex.width-1) as Float) as usize;
             let ty = (phi / PI * (tex.height-1) as Float) as usize;
-            tex.texture[ty * tex.width + tx]
+            tex.get(tx, ty)
         }
         else {
             Color::cons(0, 250, 250)
@@ -265,7 +264,7 @@ impl<'d> Renderer<'d> {
     fn map_texture_ring(&self, theta: Float, gamma: Float, ring: &Ring) -> Color {
         let tx = (gamma / ring.depth * (ring.texture.width-1) as Float) as usize;
         let ty = (theta / TAU * (ring.texture.height-1) as Float) as usize;
-        ring.texture.texture[ty * ring.texture.width + tx]
+        ring.texture.get(tx, ty)
     }
 
     fn distance_square(&self, point: &Vec3) -> Float {
@@ -296,6 +295,10 @@ impl TextureData {
             height += 1;
         }
         TextureData { height, width, texture }
+    }
+
+    pub fn get(&self, x: usize, y: usize) -> Color {
+        self.texture[y * self.width + x]
     }
 }
 
@@ -376,6 +379,14 @@ impl Buffer {
         }
         else {
             None
+        }
+    }
+
+    pub fn set(&mut self, idx: usize, color: Color, depth: Float, visual: Option<char>) {
+        self.color[idx] = Some(color);
+        self.depth[idx] = depth;
+        if let Some(chr) = visual {
+            self.visual[idx] = chr;
         }
     }
 

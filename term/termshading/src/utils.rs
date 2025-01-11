@@ -1,7 +1,9 @@
 
 
 
-use std::{error::Error, io::{stdout, Write}, time::Duration};
+use std::time::Duration;
+use std::io::{stdout, Write};
+use std::error::Error;
 
 use crossterm::event::{self, Event, KeyCode};
 
@@ -24,7 +26,7 @@ pub fn sleep(time: u64) {
 
 pub fn get_user_input() -> Vec<char> {
     let mut inputs = Vec::new();
-    if let Ok(true) = event::poll(Duration::from_millis(100)) {
+    if let Ok(true) = event::poll(Duration::from_millis(2)) {
         if let Ok(Event::Key(key_event)) = event::read() {
             match key_event.code {
                 KeyCode::Char('w') => inputs.push('w'),
@@ -42,6 +44,8 @@ pub fn get_user_input() -> Vec<char> {
                 KeyCode::Char('g') => inputs.push('g'),
                 KeyCode::Char('[') => inputs.push('['),
                 KeyCode::Char(']') => inputs.push(']'),
+                KeyCode::Char('n') => inputs.push('n'),
+                KeyCode::Char('m') => inputs.push('m'),
                 KeyCode::Char('1') => inputs.push('1'),
                 KeyCode::Char('2') => inputs.push('2'),
                 KeyCode::Char('3') => inputs.push('3'),

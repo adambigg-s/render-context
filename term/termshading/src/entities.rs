@@ -1,6 +1,7 @@
 
 
 
+use crate::configparser::Config;
 use crate::renderer::TextureData;
 use crate::{Float, PI, TAU};
 use crate::math::Vec3;
@@ -20,8 +21,8 @@ impl ViewModel {
         ViewModel { pos, rot: 0.0, tilt: 0.0, rotspeed: PI / 75.0, transspeed: 16.0 }
     }
 
-    pub fn react(&mut self, inputs: &[char], system: &System) {
-        for input in inputs {
+    pub fn react(&mut self, inputs: &[char], system: &System, config: &mut Config) {
+        inputs.iter().for_each(|input| {
             match input {
                 'W' => self.translate(Vec3::cons(0, 0, 1)),
                 'S' => self.translate(Vec3::cons(0, 0, -1)),
@@ -44,9 +45,11 @@ impl ViewModel {
                 '7' => self.goto("uranus", system),
                 '8' => self.goto("neptune", system),
                 '9' => self.goto("pluto", system),
+                'n' => config.toggle_refs(),
+                'm' => config.toggle_orbits(),
                 _ => {}
             }
-        }
+        });
     }
 
     pub fn goto(&mut self, target: &str, system: &System) {
@@ -124,16 +127,17 @@ pub struct Orbit {
     pub semimajor: Float,
     pub eccentricity: Float,
     pub inclination: Float,
-    pub longofascnode: Float,
-    pub argofperi: Float,
+    pub longitudeascnode: Float,
+    pub argofperiapsis: Float,
+    pub trueanomaly: Float,
 }
 
 impl Orbit {
     pub fn cons(semimajor: Float, eccentricity: Float, inclination: Float,
-        longofascendingnode: Float, argofperi: Float
+        longitudeascnode: Float, argofperiapsis: Float, trueanomaly: Float,
     ) -> Orbit {
         Orbit {
-            semimajor, eccentricity, inclination, longofascnode: longofascendingnode, argofperi
+            semimajor, eccentricity, inclination, longitudeascnode, argofperiapsis, trueanomaly
         }
     }
 }
@@ -167,7 +171,6 @@ pub struct System {
     pub lightsources: Vec<Vec3>,
 }
 
-#[allow(dead_code)]
 impl System {
     pub fn from(planet: Planet) -> System {
         let source = planet.loc;

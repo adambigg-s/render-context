@@ -3,7 +3,7 @@
 
 use crate::configparser::Config;
 use crate::renderer::TextureData;
-use crate::{Float, PI, TAU};
+use crate::{Float, Int, PI, TAU};
 use crate::math::Vec3;
 
 
@@ -45,8 +45,11 @@ impl ViewModel {
                 '7' => self.goto("uranus", system),
                 '8' => self.goto("neptune", system),
                 '9' => self.goto("pluto", system),
+                '0' => self.goto_default(system),
                 'n' => config.toggle_refs(),
                 'm' => config.toggle_orbits(),
+                ',' => config.modify_fov(1),
+                '.' => config.modify_fov(-1),
                 _ => {}
             }
         });
@@ -55,11 +58,21 @@ impl ViewModel {
     pub fn goto(&mut self, target: &str, system: &System) {
         system.planets.iter().for_each(|planet| {
             if planet.name == target {
-                self.pos = planet.loc + Vec3::cons(-100.0 - planet.rad, 0.0, 0.0);
+                self.pos = planet.loc + Vec3::cons(-100 - (planet.rad as Int * 2), 0, 0);
                 self.tilt = 0.0;
                 self.rot = 0.0;
             }
-        })
+        });
+    }
+
+    pub fn goto_default(&mut self, system: &System) {
+        system.planets.iter().for_each(|planet| {
+            if planet.name == "sun" {
+                self.pos = planet.loc + Vec3::cons(0, 0, planet.rad as Int * 3);
+                self.tilt = -PI / 2.0;
+                self.rot = PI / 2.0;
+            }
+        });
     }
 
     fn translate(&mut self, dir: Vec3) {
@@ -175,6 +188,24 @@ impl System {
     pub fn from(planet: Planet) -> System {
         let source = planet.loc;
         System { planets: vec![planet], lightsources: vec![source] }
+    }
+
+    pub fn transform_mini(&mut self) {
+        self.planets.iter_mut().for_each(|planet| {
+            planet.rad /= 500.0;
+            planet.loc /= 500000.0;
+            if planet.name == "sun" {
+                planet.rad /= 20.0;
+            }
+            planet.features.iter_mut().for_each(|feature| {
+                match feature {
+                    Feature::Orbit(orbit) => orbit.semimajor /= 500.0,
+                    Feature::Ring(ring) => { ring.rad /= 500.0; ring.depth /= 500.0; },
+                    Feature::SpacialReference(spaceref) => spaceref.length /= 500.0,
+                    Feature::_Moon(moon) => moon.rad /= 500.0,
+                }
+            })
+        });
     }
 
     pub fn add_planet(&mut self, planet: Planet) {

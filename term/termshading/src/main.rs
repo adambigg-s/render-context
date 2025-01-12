@@ -24,6 +24,7 @@ const TAU: Float = 6.2831855;
 const PI: Float = 3.1415925;
 const SYSTEMCONFIG: &str = "systemconfig.config";
 const CONFIG: &str = "config.config";
+const FRAMEDELAY: u64 = 5;
 
 
 
@@ -51,7 +52,7 @@ fn main() {
 
     // tui stuff
     let mut buffer = Buffer::cons(config.height(), config.width());
-    let sun = Planet::cons("sun".to_owned(), Vec3::cons(0, 0, 0), 100.0,
+    let sun = Planet::cons("sun".to_owned(), Vec3::cons(0, 0, 0), 695700.0,
         Some(SUNPATH), true, None);
     let mut system = System::from(sun);
     let mut viewmodel = ViewModel::new(Vec3::cons(0, 0, 0));
@@ -60,6 +61,7 @@ fn main() {
         println!("error parsing config: {}", err);
         panic!();
     });
+    system.transform_mini();
     viewmodel.goto("earth", &system);
     
     // ansi escape to clear terminal
@@ -108,6 +110,6 @@ fn main() {
         }
 
         print_debug(&viewmodel);
-        sleep(1);
+        sleep(FRAMEDELAY);
     }
 }

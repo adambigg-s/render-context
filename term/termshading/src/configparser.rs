@@ -118,11 +118,11 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
                 "orbital" => {
                     location_orbital(value, &mut loc)?;
                 }
-                "lightsource" => {
-                    lightsource = value.parse::<bool>()?;
-                }
                 "params" => {
                     parse_params_specific(value, &mut params)?;
+                }
+                "lightsource" => {
+                    lightsource = value.parse::<bool>()?;
                 }
                 _ => {}
             }
@@ -136,66 +136,6 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
     else {
         Err("missing requirements".into())
     }
-}
-
-fn parse_params_specific(value: &str, params: &mut Option<PlanetParams>) -> Result<(), Box<dyn Error>> {
-    let split: Vec<&str> = value.split(',').collect();
-    if split.len() < 2 {
-        return Err("too few arguments".into());
-    }
-    let tilt = split[0].parse::<Float>()?.to_radians();
-    let rotation = split[1].parse::<Float>()?.to_radians();
-    *params = Some(PlanetParams::cons(tilt, rotation));
-    Ok(())
-}
-
-fn location_orbital(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
-    let mut orbit: Option<Orbit> = None;
-    parse_orbit_specific(value, &mut orbit)?;
-    let cartesian = orbital_cartesian_transformation(&orbit.unwrap());
-    *loc = Some(cartesian);
-    Ok(())
-}
-
-fn parse_orbit_specific(value: &str, orbit: &mut Option<Orbit>) -> Result<(), Box<dyn Error>> {
-    let split: Vec<&str> = value.split(',').collect();
-    if split.len() < 6 {
-        return Err("too few arguments".into());
-    }
-    let semimajor = split[0].parse::<Float>()?;
-    let eccentricity = split[1].parse::<Float>()?;
-    let inclination = split[2].parse::<Float>()?.to_radians();
-    let longitdueofascnode = split[3].parse::<Float>()?.to_radians();
-    let argofperiapsis = split[4].parse::<Float>()?.to_radians();
-    let trueanomaly = split[5].parse::<Float>()?.to_radians();
-    *orbit = Some(Orbit::cons(semimajor, eccentricity,
-        inclination, longitdueofascnode, argofperiapsis, trueanomaly));
-    Ok(())
-}
-
-fn location_polar(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
-    let split: Vec<&str> = value.split(',').collect();
-    if split.len() < 2 {
-        return Err("too few arguments".into());
-    }
-    let dist = split[0].parse::<Int>()?;
-    let theta = split[1].parse::<Float>()?.to_radians();
-    let mut vec = Vec3::cons(dist, 0, 0);
-    vec.rotatez(-theta);
-    *loc = Some(vec);
-    Ok(())
-}
-
-fn location_cartesian(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
-    let split: Vec<&str> = value.split(',').collect();
-    if split.len() < 3 {
-        return Err("too few arguments".into());
-    }
-    let x = split[0].parse::<Int>()?;
-    let y = split[1].parse::<Int>()?;
-    let z = split[2].parse::<Int>()?;
-    *loc = Some(Vec3::cons(x, y, z));
-    Ok(())
 }
 
 fn parse_spaceref(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
@@ -316,11 +256,72 @@ fn get_texture(name: &str) -> Option<&str> {
     }
 }
 
+fn parse_params_specific(value: &str, params: &mut Option<PlanetParams>) -> Result<(), Box<dyn Error>> {
+    let split: Vec<&str> = value.split(',').collect();
+    if split.len() < 2 {
+        return Err("too few arguments".into());
+    }
+    let tilt = split[0].parse::<Float>()?.to_radians();
+    let rotation = split[1].parse::<Float>()?.to_radians();
+    *params = Some(PlanetParams::cons(tilt, rotation));
+    Ok(())
+}
+
+fn location_orbital(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
+    let mut orbit: Option<Orbit> = None;
+    parse_orbit_specific(value, &mut orbit)?;
+    let cartesian = orbital_cartesian_transformation(&orbit.unwrap());
+    *loc = Some(cartesian);
+    Ok(())
+}
+
+fn parse_orbit_specific(value: &str, orbit: &mut Option<Orbit>) -> Result<(), Box<dyn Error>> {
+    let split: Vec<&str> = value.split(',').collect();
+    if split.len() < 6 {
+        return Err("too few arguments".into());
+    }
+    let semimajor = split[0].parse::<Float>()?;
+    let eccentricity = split[1].parse::<Float>()?;
+    let inclination = split[2].parse::<Float>()?.to_radians();
+    let longitdueofascnode = split[3].parse::<Float>()?.to_radians();
+    let argofperiapsis = split[4].parse::<Float>()?.to_radians();
+    let trueanomaly = split[5].parse::<Float>()?.to_radians();
+    *orbit = Some(Orbit::cons(semimajor, eccentricity,
+        inclination, longitdueofascnode, argofperiapsis, trueanomaly));
+    Ok(())
+}
+
+fn location_polar(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
+    let split: Vec<&str> = value.split(',').collect();
+    if split.len() < 2 {
+        return Err("too few arguments".into());
+    }
+    let dist = split[0].parse::<Int>()?;
+    let theta = split[1].parse::<Float>()?.to_radians();
+    let mut vec = Vec3::cons(dist, 0, 0);
+    vec.rotatez(-theta);
+    *loc = Some(vec);
+    Ok(())
+}
+
+fn location_cartesian(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
+    let split: Vec<&str> = value.split(',').collect();
+    if split.len() < 3 {
+        return Err("too few arguments".into());
+    }
+    let x = split[0].parse::<Int>()?;
+    let y = split[1].parse::<Int>()?;
+    let z = split[2].parse::<Int>()?;
+    *loc = Some(Vec3::cons(x, y, z));
+    Ok(())
+}
+
 pub struct Config {
     height: Int, width: Int,
     fov: Float,
     render_refs: bool,
     render_orbits: bool,
+    termcharaspect: Float,
 }
 
 impl Default for Config {
@@ -331,6 +332,7 @@ impl Default for Config {
             fov: 20.0,
             render_refs: false,
             render_orbits: false,
+            termcharaspect: 2.0,
         }
     }
 }
@@ -348,6 +350,10 @@ impl Config {
         self.fov
     }
 
+    pub fn termcharaspect(&self) -> Float {
+        self.termcharaspect
+    }
+
     pub fn render_refs(&self) -> bool {
         self.render_refs
     }
@@ -362,6 +368,10 @@ impl Config {
 
     pub fn toggle_orbits(&mut self) {
         self.render_orbits = !self.render_orbits;
+    }
+
+    pub fn modify_fov(&mut self, direc: i32) {
+        self.fov += direc as Float;
     }
 }
 
@@ -387,6 +397,9 @@ pub fn general_config(file_path: &str) -> Result<Config, Box<dyn Error>> {
         }
         else if let Some(value) = line.strip_prefix("fov=") {
             config.fov = value.parse()?;
+        }
+        else if let Some(value) = line.strip_prefix("char_aspect=") {
+            config.termcharaspect = value.parse()?;
         }
     }
 

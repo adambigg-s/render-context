@@ -239,7 +239,8 @@ impl<'d> Renderer<'d> {
 
     fn view_to_screen(&self, viewframe: &Vec3) -> (Int, Int) {
         let invx = 1.0 / viewframe.x;
-        let (modx, mody) = (invx * self.config.fov() * 2.0, invx * self.config.fov());
+        let (modx, mody) = (invx * self.config.fov() * self.config.termcharaspect(),
+            invx * self.config.fov());
         let screenx = (viewframe.y * modx + self.buffer.halfwidth() as Float) as Int;
         let screeny = (viewframe.z * mody + self.buffer.halfheight() as Float) as Int;
         (screenx, screeny)
@@ -257,7 +258,7 @@ impl<'d> Renderer<'d> {
             tex.get(tx, ty)
         }
         else {
-            Color::cons(0, 250, 250)
+            Color::cons(0, 255, 255)
         }
     }
 

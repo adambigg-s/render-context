@@ -2,7 +2,7 @@
 
 
 
-use std::ops::{Add, AddAssign, Mul, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub};
 
 use crate::{entities::Orbit, Float, Int};
 
@@ -69,6 +69,18 @@ impl Vec3 {
         self.rotatex(angles.x);
     }
 
+    pub fn reflex(&mut self) {
+        self.x = -self.x;
+    }
+
+    pub fn refley(&mut self) {
+        self.y = -self.y;
+    }
+
+    pub fn reflez(&mut self) {
+        self.z = -self.z;
+    }
+
     pub fn inner_prod(&self, other: &Vec3) -> Float {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
@@ -101,8 +113,27 @@ impl AddAssign for Vec3 {
 
 impl Mul<Float> for Vec3 {
     type Output = Vec3;
-    fn mul(self, rhs: Float) -> Vec3 {
+    fn mul(self, rhs: Float) -> Self::Output {
         Vec3::cons(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
+
+impl MulAssign<Float> for Vec3 {
+    fn mul_assign(&mut self, rhs: Float) {
+        self.x *= rhs; self.y *= rhs; self.z *= rhs;
+    }
+}
+
+impl Div<Float> for Vec3 {
+    type Output = Vec3;
+    fn div(self, rhs: Float) -> Self::Output {
+        Vec3::cons(self.x / rhs, self.y / rhs, self.z / rhs)
+    }
+}
+
+impl DivAssign<Float> for Vec3 {
+    fn div_assign(&mut self, other: Float) {
+        self.x /= other; self.y /= other; self.z /= other;
     }
 }
 
@@ -121,9 +152,10 @@ pub fn orbital_cartesian_transformation(orbit: &Orbit) -> Vec3 {
         / (1.0 + eccentricity * trueanomaly.cos());
     
     let mut vec = Vec3::cons(radius * trueanomaly.cos(), radius * trueanomaly.sin(), 0.0);
-    vec.rotatez(-argofperiapsis);
+    vec.rotatez(argofperiapsis);
     vec.rotatex(inclination);
-    vec.rotatez(-longitudeascnode);
+    vec.rotatez(longitudeascnode);
+    vec.reflex();
     vec
 }
 

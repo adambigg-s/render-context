@@ -87,7 +87,6 @@ impl<'d> Renderer<'d> {
 
                 if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
                     if viewframe.x >= self.buffer.depth[idx] { continue; }
-                    
                     let color = self.map_texture_ring(theta, gamma, ring);
                     self.buffer.set(idx, Some(color), viewframe.x, None);
                 }
@@ -97,6 +96,7 @@ impl<'d> Renderer<'d> {
 
     fn render_orbit(&mut self, orbit: &Orbit, planet: &Planet) {
         let distance = self.distance_square(&planet.loc).sqrt() - orbit.semimajor;
+        if self.behind_view(&orbit.barycenter) || distance > 200.0 { return; }
         let thetadelta = (distance / (orbit.semimajor * 170.0)).max(0.01);
         let thetastep = (TAU / thetadelta) as Int;
 
@@ -261,6 +261,7 @@ impl<'d> Renderer<'d> {
     }
 }
 
+#[derive(Debug)]
 pub struct TextureData {
     pub height: usize, pub width: usize,
     pub texture: Vec<Color>,

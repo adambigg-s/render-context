@@ -1,8 +1,13 @@
+
+
+
 use crate::buffer::{color_tag, Buffer};
 use crate::math::Vec3;
 use crate::utility::Wall;
 use crate::viewmodel::ViewModel;
 use crate::Float;
+
+
 
 pub struct Renderer<'d> {
     pub viewmodel: &'d ViewModel,

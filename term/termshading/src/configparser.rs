@@ -116,6 +116,9 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
             }
             let (key, value) = (parts[0], parts[1]);
             match key {
+                "orbital" => {
+                    location_orbital(value, &mut loc)?;
+                }
                 "cartesian" => {
                     location_cartesian(value, &mut loc)?;
                 }
@@ -124,9 +127,6 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
                 }
                 "params" => {
                     parse_params_specific(value, &mut params)?;
-                }
-                "orbital" => {
-                    location_orbital(value, &mut loc)?;
                 }
                 "lightsource" => {
                     lightsource = value.parse::<bool>()?;
@@ -264,15 +264,21 @@ fn get_texture(name: &str) -> Option<&str> {
 }
 
 fn parse_sun_orbit(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
-    let target = "sun";
+    let mut target = None;
     let mut orbit = None;
     for token in data.split_whitespace() {
-        if let Some(value) = token.strip_prefix("orbital=") {
+        if token == "planet" {
+            continue;
+        }
+        else if target.is_none() {
+            target = Some(token);
+        }
+        else if let Some(value) = token.strip_prefix("orbital=") {
             parse_orbit_specific(value, &mut orbit)?;
         }
     }
 
-    if let Some(orbit) = orbit {
+    if let (Some(target), Some(orbit)) = (target, orbit) {
         Ok(TargetFeature::cons(target, Feature::Orbit(orbit)))
     }
     else {
@@ -291,8 +297,9 @@ fn parse_orbit_specific(value: &str, orbit: &mut Option<Orbit>) -> Result<(), Bo
     let longitdueofascnode = split[3].parse::<Float>()?.to_radians();
     let argofperiapsis = split[4].parse::<Float>()?.to_radians();
     let trueanomaly = split[5].parse::<Float>()?.to_radians();
+    let bary = Vec3::cons(0, 0, 0);
     *orbit = Some(Orbit::cons(semimajor, eccentricity,
-        inclination, longitdueofascnode, argofperiapsis, trueanomaly));
+        inclination, longitdueofascnode, argofperiapsis, trueanomaly, bary));
     Ok(())
 }
 

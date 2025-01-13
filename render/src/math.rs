@@ -1,9 +1,11 @@
-use std::{
-    f32::consts::{PI, TAU},
-    ops::{Add, AddAssign, Sub},
-};
+
+
+
+use std::ops::{Add, AddAssign, Sub};
 
 use crate::Float;
+
+
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Vec3<T> {
@@ -61,19 +63,13 @@ impl Vec3<Float> {
     }
 }
 
-pub const fn tau() -> Float {
-    TAU
-}
 
-pub const fn pi() -> Float {
-    PI
-}
 
 #[cfg(test)]
 mod test {
-    use crate::Int;
-
     use super::*;
+    
+    use crate::Int;
 
     #[test]
     fn vector_addassign() {

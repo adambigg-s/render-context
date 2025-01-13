@@ -144,7 +144,8 @@ pub fn orbital_cartesian_transformation(orbit: &Orbit) -> Vec3 {
         inclination,
         longitudeascnode,
         argofperiapsis,
-        trueanomaly
+        trueanomaly,
+        barycenter,
     } = *orbit;
 
     let radius = semimajor
@@ -156,6 +157,7 @@ pub fn orbital_cartesian_transformation(orbit: &Orbit) -> Vec3 {
     vec.rotatex(inclination);
     vec.rotatez(longitudeascnode);
     vec.reflex();
+    vec += barycenter;
     vec
 }
 

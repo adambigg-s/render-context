@@ -1,20 +1,26 @@
+
+
+
 mod buffer;
 mod math;
 mod renderer;
 mod utility;
 mod viewmodel;
 
-use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
-use utility::{get_movement, Wall};
-use viewmodel::ViewModel;
+
 
 use std::io::{stdout, Write};
 
-use buffer::Buffer;
-use math::Vec3;
-use renderer::Renderer;
+use minifb::{Key, Scale, ScaleMode, Window, WindowOptions};
 
+use crate::buffer::Buffer;
+use crate::math::Vec3;
+use crate::renderer::Renderer;
 use crate::renderer::{draw_point_2d, draw_view_2d, draw_wall_2d};
+use crate::utility::Wall;
+use crate::viewmodel::ViewModel;
+
+
 
 const RES: usize = 2;
 const HEIGHT: usize = RES * 150;
@@ -68,7 +74,7 @@ fn main() {
     );
 
     while window.is_open() && !window.is_key_down(Key::Escape) {
-        get_movement(&mut viewmodel, window.get_keys());
+        viewmodel.get_movement(window.get_keys());
         buffer.blackout();
         let mut renderer = Renderer::cons(&viewmodel, &mut buffer);
         for &point in &points {

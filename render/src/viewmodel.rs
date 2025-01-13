@@ -1,5 +1,14 @@
-use crate::math::{tau, Vec3};
+
+
+
+use std::f32::consts::{PI, TAU};
+
+use minifb::Key;
+
+use crate::math::Vec3;
 use crate::{Float, Int};
+
+
 
 pub struct ViewModel {
     pub position: Vec3<Float>,
@@ -29,9 +38,10 @@ impl ViewModel {
     pub fn rotate(&mut self, delta: Float) {
         self.rotation += delta;
         if self.rotation < 0.0 {
-            self.rotation += tau();
-        } else if self.rotation > tau() {
-            self.rotation -= tau();
+            self.rotation += TAU;
+        }
+        else if self.rotation > TAU {
+            self.rotation -= TAU;
         }
     }
 
@@ -39,7 +49,25 @@ impl ViewModel {
         self.tilt += delta;
         self.tilt = self.tilt.clamp(-70, 70);
     }
+
+    pub fn get_movement(&mut self, keys: Vec<Key>) {
+        keys.iter().for_each(|key| {
+            match key {
+                Key::Q => self.rotate(1.0 / PI / 3.0),
+                Key::E => self.rotate(-1.0 / PI / 3.0),
+                Key::W => self.move_forward(1.0, 5.0),
+                Key::S => self.move_forward(-1.0, 5.0),
+                Key::A => self.move_lateral(1.0, 5.0),
+                Key::D => self.move_lateral(-1.0, 5.0),
+                Key::R => self.tilt(-1),
+                Key::F => self.tilt(1),
+                _ => {}
+            };
+        });
+    }    
 }
+
+
 
 #[cfg(test)]
 mod test {

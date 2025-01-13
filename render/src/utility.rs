@@ -1,6 +1,9 @@
-use minifb::Key;
 
-use crate::{math::{pi, Vec3}, viewmodel::ViewModel, Float};
+
+
+use crate::{math::Vec3, Float};
+
+
 
 pub struct Wall {
     pub edge1: Vec3<Float>,
@@ -31,18 +34,4 @@ pub fn delay(time: u64) {
 #[allow(dead_code)]
 pub fn dump<Any>(_thing: Any) {}
 
-pub fn get_movement(view: &mut ViewModel, keys: Vec<Key>) {
-    keys.iter().for_each(|key| {
-        match key {
-            Key::Q => view.rotate(1.0 / pi() / 3.0),
-            Key::E => view.rotate(-1.0 / pi() / 3.0),
-            Key::W => view.move_forward(1.0, 5.0),
-            Key::S => view.move_forward(-1.0, 5.0),
-            Key::A => view.move_lateral(1.0, 5.0),
-            Key::D => view.move_lateral(-1.0, 5.0),
-            Key::R => view.tilt(-1),
-            Key::F => view.tilt(1),
-            _ => {}
-        };
-    });
-}
+

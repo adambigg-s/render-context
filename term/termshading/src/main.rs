@@ -76,4 +76,12 @@ fn main() {
         print_debug(&viewmodel);
         sleep(FRAMEDELAY);
     }
+
+    // debugging stuff here. planets[3] should likely be earth, but if it crashes at this point
+    // it doesn't really matter anway cause last few lines
+    println!("{:?}", system.planets[3].name);
+    println!("{:?}", system.planets[3].loc);
+    println!("{:?}", system.planets[3].rad);
+    println!("{:?}", system.planets[3].lightsource);
+    println!("{:?}", system.planets[3].features);
 }

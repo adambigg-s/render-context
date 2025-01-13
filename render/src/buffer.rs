@@ -1,4 +1,9 @@
+
+
+
 use crate::{utility::idx_usize_isize, Color};
+
+
 
 pub struct Buffer {
     height: usize,
@@ -40,7 +45,7 @@ impl Buffer {
     }
 
     pub fn place_pixel(&mut self, x: usize, y: usize, data: Color) {
-        let ytransformed: usize = self.height - 1 - y;
+        let ytransformed: usize = self.height-1 - y;
         {
             debug_assert!(ytransformed * self.width + x < self.width * self.height);
         }
@@ -52,9 +57,8 @@ impl Buffer {
         (-range..=range).for_each(|dy| {
             (-range..=range).for_each(|dx| {
                 let (sx, sy): (usize, usize) = idx_usize_isize(x, y, dx, dy);
-                if self.inbounds(sx, sy) {
-                    self.place_pixel(sx, sy, color);
-                }
+                if !self.inbounds(sx, sy) { return; }
+                self.place_pixel(sx, sy, color);
             })
         })
     }
@@ -85,14 +89,6 @@ impl Buffer {
                 y += start_y;
             }
         }
-    }
-
-    pub fn draw_vertical(&mut self, startx: usize, starty: usize, height: usize) {
-        (0..height).for_each(|dy| {
-            if self.inbounds(startx, starty + dy) {
-                self.place_pixel(startx, starty + dy, 0xff00ffff);
-            }
-        })
     }
 
     pub fn inbounds(&self, x: usize, y: usize) -> bool {

@@ -1,6 +1,8 @@
 
 
 
+use std::fmt::Display;
+
 use crate::configparser::Config;
 use crate::renderer::TextureData;
 use crate::{Float, Int, PI, TAU};
@@ -98,6 +100,7 @@ impl ViewModel {
     }
 }
 
+#[derive(Debug)]
 pub struct PlanetParams {
     pub tilt: Float,
     pub rotation: Float,
@@ -109,6 +112,7 @@ impl PlanetParams {
     }
 }
 
+#[derive(Debug)]
 pub struct Planet {
     pub name: String,
     pub loc: Vec3,
@@ -126,11 +130,12 @@ impl Planet {
     ) -> Planet {
         Planet {
             name, loc, rad, texture: texpath.map(TextureData::from),
-            lightsource, params, features: Vec::new()
+            lightsource, params, features: Vec::new(),
         }
     }
 }
 
+#[derive(Debug)]
 pub enum Feature {
     Orbit(Orbit),
     Ring(Ring),
@@ -146,18 +151,21 @@ pub struct Orbit {
     pub longitudeascnode: Float,
     pub argofperiapsis: Float,
     pub trueanomaly: Float,
+    pub barycenter: Vec3,
 }
 
 impl Orbit {
     pub fn cons(semimajor: Float, eccentricity: Float, inclination: Float,
-        longitudeascnode: Float, argofperiapsis: Float, trueanomaly: Float,
+        longitudeascnode: Float, argofperiapsis: Float, trueanomaly: Float, barycenter: Vec3,
     ) -> Orbit {
         Orbit {
-            semimajor, eccentricity, inclination, longitudeascnode, argofperiapsis, trueanomaly
+            semimajor, eccentricity, inclination,
+            longitudeascnode, argofperiapsis, trueanomaly, barycenter
         }
     }
 }
 
+#[derive(Debug)]
 pub struct Ring {
     pub rad: Float,
     pub depth: Float,
@@ -171,6 +179,7 @@ impl Ring {
     }
 }
 
+#[derive(Debug)]
 pub struct SpacialReference {
     pub length: Float,
 }
@@ -181,6 +190,7 @@ impl SpacialReference {
     }
 }
 
+#[derive(Debug)]
 pub struct System {
     pub planets: Vec<Planet>,
     pub lightsources: Vec<Vec3>,
@@ -206,7 +216,7 @@ impl System {
                     Feature::SpacialReference(spaceref) => spaceref.length /= 500.0,
                     Feature::Moon(moon) => moon.rad /= 500.0,
                 }
-            })
+            });
         });
     }
 

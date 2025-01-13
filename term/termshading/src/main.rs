@@ -10,8 +10,6 @@ mod configparser;
 
 
 
-use minifb::{Window, WindowOptions};
-
 use crate::configparser::{general_config, parse_config, Config, SUNPATH};
 use crate::renderer::{Buffer, Renderer};
 use crate::math::Vec3;
@@ -32,25 +30,11 @@ type Float = f32;
 type Int = i32;
 
 fn main() {
-    // decides whether to open gui or tui
-    let mut debug: bool = false;
-    let envs: Vec<String> = std::env::args().collect();
-    if envs.get(1).is_some() { debug = true; }
-    let mut window: Option<Window> = None;
-    if debug {
-        window = Some(Window::new(
-            "debug buffer",
-            400, 400, WindowOptions { scale: minifb::Scale::X2, ..Default::default() }
-        ).unwrap());
-    }
-    let mut debug_buffer = Buffer::cons(400, 400);
-
     let mut config: Config = general_config(CONFIG).unwrap_or_else(|err| {
         println!("error parsing config: {}", err);
         panic!();
     });
 
-    // tui stuff
     let mut buffer = Buffer::cons(config.height(), config.width());
     let sun = Planet::cons("sun".to_owned(), Vec3::cons(0, 0, 0), 695700.0,
         Some(SUNPATH), true, None);
@@ -76,39 +60,19 @@ fn main() {
         }
 
         let mut renderer = Renderer::cons(&viewmodel, &mut buffer, &system, &config);
-        let mut debug_renderer = Renderer::cons(&viewmodel, &mut debug_buffer, &system, &config);
-        if !debug {
-            renderer.buffer.clear();
-            renderer.render_planets();
-            if config.render_refs() {
-                renderer.render_spacerefs();
-            }
-            if config.render_orbits() {
-                renderer.render_orbits();
-            }
-            renderer.render_rings();
-            dump(renderer);
-            viewmodel.react(&inputs, &system, &mut config);
-            buffer.display();
+        renderer.buffer.clear();
+        renderer.render_planets();
+        if config.render_refs() {
+            renderer.render_spacerefs();
         }
-        else {
-            debug_renderer.buffer.clear();
-            debug_renderer.render_planets();
-            debug_renderer.render_spacerefs();
-            debug_renderer.render_orbits();
-            debug_renderer.render_rings();
-            dump(debug_renderer);
-            viewmodel.react(&inputs, &system, &mut config);
-
-            if let Some(ref mut window) = window {
-                window.update_with_buffer(
-                    &debug_buffer.debug(),
-                    debug_buffer.width as usize,
-                    debug_buffer.height as usize
-                ).unwrap();
-            }
+        if config.render_orbits() {
+            renderer.render_orbits();
         }
-
+        renderer.render_rings();
+        dump(renderer);
+        viewmodel.react(&inputs, &system, &mut config);
+        buffer.display();
+    
         print_debug(&viewmodel);
         sleep(FRAMEDELAY);
     }

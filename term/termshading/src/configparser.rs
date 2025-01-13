@@ -80,6 +80,13 @@ pub fn parse_config(file_path: &str, system: &mut System) -> Result<(), Box<dyn 
                 Err(err) => flash_error(err, 2000),
             }
         }
+        
+        if line.contains("orbital") {
+            match parse_sun_orbit(&line) {
+                Ok(targfeat) => system.add_feature(targfeat.target, targfeat.feature),
+                Err(err) => flash_error(err, 2000),
+            }
+        }
     }
 
     Ok(())
@@ -115,11 +122,11 @@ fn parse_planet(data: &str) -> Result<Planet, Box<dyn Error>> {
                 "polar" => {
                     location_polar(value, &mut loc)?;
                 }
-                "orbital" => {
-                    location_orbital(value, &mut loc)?;
-                }
                 "params" => {
                     parse_params_specific(value, &mut params)?;
+                }
+                "orbital" => {
+                    location_orbital(value, &mut loc)?;
                 }
                 "lightsource" => {
                     lightsource = value.parse::<bool>()?;
@@ -235,7 +242,7 @@ fn parse_ring(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
     }
 }
 
-fn parse_moon(_data: &str) -> Result<TargetFeature, Box<dyn Error>> {
+fn parse_moon(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
     todo!()
 }
 
@@ -256,23 +263,21 @@ fn get_texture(name: &str) -> Option<&str> {
     }
 }
 
-fn parse_params_specific(value: &str, params: &mut Option<PlanetParams>) -> Result<(), Box<dyn Error>> {
-    let split: Vec<&str> = value.split(',').collect();
-    if split.len() < 2 {
-        return Err("too few arguments".into());
+fn parse_sun_orbit(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
+    let target = "sun";
+    let mut orbit = None;
+    for token in data.split_whitespace() {
+        if let Some(value) = token.strip_prefix("orbital=") {
+            parse_orbit_specific(value, &mut orbit)?;
+        }
     }
-    let tilt = split[0].parse::<Float>()?.to_radians();
-    let rotation = split[1].parse::<Float>()?.to_radians();
-    *params = Some(PlanetParams::cons(tilt, rotation));
-    Ok(())
-}
 
-fn location_orbital(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
-    let mut orbit: Option<Orbit> = None;
-    parse_orbit_specific(value, &mut orbit)?;
-    let cartesian = orbital_cartesian_transformation(&orbit.unwrap());
-    *loc = Some(cartesian);
-    Ok(())
+    if let Some(orbit) = orbit {
+        Ok(TargetFeature::cons(target, Feature::Orbit(orbit)))
+    }
+    else {
+        Err("error parsing sun orbital path".into())
+    }
 }
 
 fn parse_orbit_specific(value: &str, orbit: &mut Option<Orbit>) -> Result<(), Box<dyn Error>> {
@@ -288,6 +293,14 @@ fn parse_orbit_specific(value: &str, orbit: &mut Option<Orbit>) -> Result<(), Bo
     let trueanomaly = split[5].parse::<Float>()?.to_radians();
     *orbit = Some(Orbit::cons(semimajor, eccentricity,
         inclination, longitdueofascnode, argofperiapsis, trueanomaly));
+    Ok(())
+}
+
+fn location_orbital(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn Error>> {
+    let mut orbit: Option<Orbit> = None;
+    parse_orbit_specific(value, &mut orbit)?;
+    let cartesian = orbital_cartesian_transformation(&orbit.unwrap());
+    *loc = Some(cartesian);
     Ok(())
 }
 
@@ -313,6 +326,17 @@ fn location_cartesian(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn
     let y = split[1].parse::<Int>()?;
     let z = split[2].parse::<Int>()?;
     *loc = Some(Vec3::cons(x, y, z));
+    Ok(())
+}
+
+fn parse_params_specific(value: &str, params: &mut Option<PlanetParams>) -> Result<(), Box<dyn Error>> {
+    let split: Vec<&str> = value.split(',').collect();
+    if split.len() < 2 {
+        return Err("too few arguments".into());
+    }
+    let tilt = split[0].parse::<Float>()?.to_radians();
+    let rotation = split[1].parse::<Float>()?.to_radians();
+    *params = Some(PlanetParams::cons(tilt, rotation));
     Ok(())
 }
 

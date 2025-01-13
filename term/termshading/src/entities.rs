@@ -124,8 +124,10 @@ impl Planet {
         name: String, loc: Vec3, rad: Float, texpath: Option<&str>,
         lightsource: bool, params: Option<PlanetParams>
     ) -> Planet {
-        let texture = texpath.map(TextureData::from);
-        Planet { name, loc, rad, texture, lightsource, params, features: Vec::new() }
+        Planet {
+            name, loc, rad, texture: texpath.map(TextureData::from),
+            lightsource, params, features: Vec::new()
+        }
     }
 }
 
@@ -133,9 +135,10 @@ pub enum Feature {
     Orbit(Orbit),
     Ring(Ring),
     SpacialReference(SpacialReference),
-    _Moon(Planet),
+    Moon(Planet),
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Orbit {
     pub semimajor: Float,
     pub eccentricity: Float,
@@ -164,8 +167,7 @@ pub struct Ring {
 
 impl Ring {
     pub fn cons(rad: Float, depth: Float, texpath: &str, params: Option<PlanetParams>) -> Ring {
-        let texture = TextureData::from(texpath);
-        Ring { rad, depth, texture, params }
+        Ring { rad, depth, texture: TextureData::from(texpath), params }
     }
 }
 
@@ -199,10 +201,10 @@ impl System {
             }
             planet.features.iter_mut().for_each(|feature| {
                 match feature {
-                    Feature::Orbit(orbit) => orbit.semimajor /= 500.0,
+                    Feature::Orbit(orbit) => orbit.semimajor /= 500000.0,
                     Feature::Ring(ring) => { ring.rad /= 500.0; ring.depth /= 500.0; },
                     Feature::SpacialReference(spaceref) => spaceref.length /= 500.0,
-                    Feature::_Moon(moon) => moon.rad /= 500.0,
+                    Feature::Moon(moon) => moon.rad /= 500.0,
                 }
             })
         });
@@ -220,7 +222,7 @@ impl System {
             Feature::SpacialReference(spaceref) => self.add_spaceref(target, spaceref),
             Feature::Ring(ring) => self.add_ring(target, ring),
             Feature::Orbit(orbit) => self.add_orbit(target, orbit),
-            Feature::_Moon(moon) => self.add_moon(target, moon),
+            Feature::Moon(moon) => self.add_moon(target, moon),
         }
     }
 
@@ -242,7 +244,11 @@ impl System {
         }
     }
 
-    pub fn add_moon(&mut self, _target: &str, _moon: Planet) {
-        todo!();
+    pub fn add_moon(&mut self, target: &str, moon: Planet) {
+        if let Some(planet) = self.planets.iter().find(|planet| planet.name == target) {
+            let mut moon = moon;
+            moon.loc += planet.loc;
+            self.add_planet(moon);
+        }
     }
 }

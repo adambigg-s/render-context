@@ -7,7 +7,7 @@ use std::io::{stdout, Write};
 use crate::configparser::Config;
 use crate::entities::{Feature, Orbit, PlanetParams, Ring, SpacialReference};
 use crate::{Float, Int, Planet, System, ViewModel, PI, TAU};
-use crate::math::Vec3;
+use crate::math::{orbital_cartesian_transformation, Vec3};
 
 
 
@@ -89,32 +89,24 @@ impl<'d> Renderer<'d> {
                     if viewframe.x >= self.buffer.depth[idx] { continue; }
                     
                     let color = self.map_texture_ring(theta, gamma, ring);
-                    self.buffer.set(idx, color, viewframe.x, None);
+                    self.buffer.set(idx, Some(color), viewframe.x, None);
                 }
             }
         }
     }
 
     fn render_orbit(&mut self, orbit: &Orbit, planet: &Planet) {
-        let distance = self.distance_square(&planet.loc).sqrt();
-        if self.behind_view(&planet.loc) || distance > 1000.0 { return; }
+        let distance = self.distance_square(&planet.loc).sqrt() - orbit.semimajor;
         let thetadelta = (distance / (orbit.semimajor * 170.0)).max(0.01);
         let thetastep = (TAU / thetadelta) as Int;
 
         for thetamul in 0..thetastep {
             let theta = thetamul as Float * thetadelta;
 
-            let rad = orbit.semimajor
-                * (1.0 - orbit.eccentricity * orbit.eccentricity)
-                / (1.0 + orbit.eccentricity * theta.cos());
-
-            let x = rad * theta.cos();
-            let y = rad * theta.sin();
-            let mut worldframe = Vec3::cons(x, y, 0.0);
-            let rotations = Vec3::cons(orbit.longitudeascnode, orbit.inclination, orbit.argofperiapsis);
-            worldframe.rotationmatzyx(rotations);
-            worldframe += planet.loc;
-
+            let mut orbit = *orbit;
+            orbit.trueanomaly = theta;
+            let worldframe = orbital_cartesian_transformation(&orbit);
+            
             let viewframe = self.world_to_view(&worldframe);
             if viewframe.x <= 0.0 { continue; }
             let (screenx, screeny) = self.view_to_screen(&viewframe);
@@ -123,15 +115,10 @@ impl<'d> Renderer<'d> {
                 if viewframe.x > self.buffer.depth[idx] { continue; }
                 let mut normal = worldframe - planet.loc;
                 normal.normalize();
-                let luminance = self.generalize_luminance(worldframe, normal);
+                let luminance = self.body_luminance(planet, worldframe, normal);
                 let mut color = Color::cons(204, 174, 6);
-                if (theta - orbit.trueanomaly).abs() < 0.05 {
-                    color = Color::cons(0, 255, 255);
-                }
-                else {
-                    color.lighting(luminance);
-                }
-                self.buffer.set(idx, color, viewframe.x, None);
+                color.lighting(luminance);
+                self.buffer.set(idx, Some(color), viewframe.x, None);
             }
         }
     }
@@ -166,7 +153,7 @@ impl<'d> Renderer<'d> {
         
         if let Some(idx) = self.buffer.inboundsdex(screenx, screeny) {
             if viewframe.x > self.buffer.depth[idx] { return; }
-            self.buffer.set(idx, color, viewframe.x, None);
+            self.buffer.set(idx, Some(color), viewframe.x, None);
         }
     }
 
@@ -206,7 +193,7 @@ impl<'d> Renderer<'d> {
                     let luminance = self.body_luminance(planet, worldframe, normal);
                     let mut color = self.map_texture(theta, phi, planet);
                     color.lighting(luminance);
-                    self.buffer.set(idx, color, viewframe.x, None);
+                    self.buffer.set(idx, Some(color), viewframe.x, None);
                 }
             }
         }
@@ -308,9 +295,14 @@ pub struct Color {
     pub red: u8, pub green: u8, pub blue: u8,
 }
 
+#[allow(dead_code)]
 impl Color {
     pub fn cons(r: u8, g: u8, b: u8) -> Color {
         Color { red: r, green: g, blue: b }
+    }
+
+    pub fn to_ansifrom(self) -> String {
+        format!("\x1b[38;2;{};{};{}m", self.red, self.green, self.blue)
     }
 
     pub fn to_ansiback(self) -> String {
@@ -358,19 +350,6 @@ impl Buffer {
         }
     }
 
-    pub fn debug(&self) -> Vec<u32> {
-        let mut output = Vec::with_capacity(self.height as usize * self.width as usize);
-        self.color.iter().for_each(|color| {
-            if let Some(color) = color {
-                output.push(color.to_u32());
-            }
-            else {
-                output.push(0xFF000000);
-            }
-        });
-        output
-    }
-
     pub fn inboundsdex(&self, x: Int, y: Int) -> Option<usize> {
         let (height, width) = (self.height as usize, self.width as usize);
         let (x, y) = (x as usize, y as usize);
@@ -383,11 +362,13 @@ impl Buffer {
         }
     }
 
-    pub fn set(&mut self, idx: usize, color: Color, depth: Float, visual: Option<char>) {
-        self.color[idx] = Some(color);
+    pub fn set(&mut self, idx: usize, color: Option<Color>, depth: Float, visual: Option<char>) {
         self.depth[idx] = depth;
         if let Some(chr) = visual {
             self.visual[idx] = chr;
+        }
+        if let Some(color) = color {
+            self.color[idx] = Some(color);
         }
     }
 

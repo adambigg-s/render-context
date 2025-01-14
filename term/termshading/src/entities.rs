@@ -1,8 +1,6 @@
 
 
 
-use std::fmt::Display;
-
 use crate::configparser::Config;
 use crate::renderer::TextureData;
 use crate::{Float, Int, PI, TAU};
@@ -53,7 +51,7 @@ impl ViewModel {
                 ',' => config.modify_fov(1),
                 '.' => config.modify_fov(-1),
                 _ => {}
-            }
+            };
         });
     }
 
@@ -145,22 +143,33 @@ pub enum Feature {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Orbit {
+    pub params: OrbitalParams,
+    pub barycenter: Vec3,
+    pub apply_lighting: bool,
+}
+
+impl Orbit {
+    pub fn cons(params: OrbitalParams, barycenter: Vec3, lighting: bool) -> Orbit {
+        Orbit { params, barycenter, apply_lighting: lighting }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct OrbitalParams {
     pub semimajor: Float,
     pub eccentricity: Float,
     pub inclination: Float,
     pub longitudeascnode: Float,
     pub argofperiapsis: Float,
     pub trueanomaly: Float,
-    pub barycenter: Vec3,
 }
 
-impl Orbit {
-    pub fn cons(semimajor: Float, eccentricity: Float, inclination: Float,
-        longitudeascnode: Float, argofperiapsis: Float, trueanomaly: Float, barycenter: Vec3,
-    ) -> Orbit {
-        Orbit {
-            semimajor, eccentricity, inclination,
-            longitudeascnode, argofperiapsis, trueanomaly, barycenter
+impl OrbitalParams {
+    pub fn cons(semimajor: Float, eccentricity: Float, inclination: Float, longitudeascnode: Float,
+        argofperiapsis: Float, trueanomaly: Float
+    ) -> OrbitalParams {
+        OrbitalParams {
+            semimajor, eccentricity, inclination, longitudeascnode, argofperiapsis, trueanomaly
         }
     }
 }
@@ -211,7 +220,7 @@ impl System {
             }
             planet.features.iter_mut().for_each(|feature| {
                 match feature {
-                    Feature::Orbit(orbit) => orbit.semimajor /= 500000.0,
+                    Feature::Orbit(orbit) => orbit.params.semimajor /= 500000.0,
                     Feature::Ring(ring) => { ring.rad /= 500.0; ring.depth /= 500.0; },
                     Feature::SpacialReference(spaceref) => spaceref.length /= 500.0,
                     Feature::Moon(moon) => moon.rad /= 500.0,
@@ -257,6 +266,7 @@ impl System {
     pub fn add_moon(&mut self, target: &str, moon: Planet) {
         if let Some(planet) = self.planets.iter().find(|planet| planet.name == target) {
             let mut moon = moon;
+            moon.loc *= 500.0;
             moon.loc += planet.loc;
             self.add_planet(moon);
         }

@@ -95,16 +95,16 @@ impl<'d> Renderer<'d> {
     }
 
     fn render_orbit(&mut self, orbit: &Orbit, planet: &Planet) {
-        let distance = self.distance_square(&planet.loc).sqrt() - orbit.semimajor;
-        if self.behind_view(&orbit.barycenter) || distance > 200.0 { return; }
-        let thetadelta = (distance / (orbit.semimajor * 170.0)).max(0.01);
+        let distance = self.distance_square(&planet.loc).sqrt();
+        if distance > self.config.orbital_distance() { return; }
+        let thetadelta = (distance / (orbit.params.semimajor * 90.0)).max(0.005);
         let thetastep = (TAU / thetadelta) as Int;
 
         for thetamul in 0..thetastep {
             let theta = thetamul as Float * thetadelta;
 
             let mut orbit = *orbit;
-            orbit.trueanomaly = theta;
+            orbit.params.trueanomaly = theta;
             let worldframe = orbital_cartesian_transformation(&orbit);
             
             let viewframe = self.world_to_view(&worldframe);
@@ -117,8 +117,13 @@ impl<'d> Renderer<'d> {
                 normal.normalize();
                 let luminance = self.body_luminance(planet, worldframe, normal);
                 let mut color = Color::cons(204, 174, 6);
-                color.lighting(luminance);
-                self.buffer.set(idx, Some(color), viewframe.x, None);
+                if orbit.apply_lighting {
+                    color.lighting(luminance);
+                    self.buffer.set(idx, Some(color), viewframe.x, None);
+                }
+                else {
+                    self.buffer.set(idx, None, viewframe.x, Some('.'));
+                }
             }
         }
     }

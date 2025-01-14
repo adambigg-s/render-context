@@ -22,7 +22,7 @@ const TAU: Float = 6.2831855;
 const PI: Float = 3.1415925;
 const SYSTEMCONFIG: &str = "systemconfig.config";
 const CONFIG: &str = "config.config";
-const FRAMEDELAY: u64 = 5;
+const FRAMEDELAY: u64 = 1000 / 60;
 
 
 

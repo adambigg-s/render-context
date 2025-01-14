@@ -4,7 +4,7 @@
 
 use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub};
 
-use crate::{entities::Orbit, Float, Int};
+use crate::{entities::{Orbit, OrbitalParams}, Float, Int};
 
 
 
@@ -139,14 +139,19 @@ impl DivAssign<Float> for Vec3 {
 
 pub fn orbital_cartesian_transformation(orbit: &Orbit) -> Vec3 {
     let Orbit {
+        params,
+        barycenter,
+        ..
+    } = orbit;
+    
+    let OrbitalParams {
         semimajor,
         eccentricity,
         inclination,
         longitudeascnode,
         argofperiapsis,
         trueanomaly,
-        barycenter,
-    } = *orbit;
+    } = *params;
 
     let radius = semimajor
         * (1.0 - eccentricity * eccentricity)
@@ -157,7 +162,7 @@ pub fn orbital_cartesian_transformation(orbit: &Orbit) -> Vec3 {
     vec.rotatex(inclination);
     vec.rotatez(longitudeascnode);
     vec.reflex();
-    vec += barycenter;
+    vec += *barycenter;
     vec
 }
 

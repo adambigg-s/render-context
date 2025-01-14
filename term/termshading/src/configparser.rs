@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::error::Error;
 
-use crate::entities::{Feature, Orbit, PlanetParams, Ring, SpacialReference};
+use crate::entities::{Feature, Orbit, OrbitalParams, PlanetParams, Ring, SpacialReference};
 use crate::entities::{Planet, System};
 use crate::math::{orbital_cartesian_transformation, Vec3};
 use crate::utils::flash_error;
@@ -44,6 +44,7 @@ pub fn parse_config(file_path: &str, system: &mut System) -> Result<(), Box<dyn 
     print!("\x1b[H");
     let file = File::open(file_path)?;
     let reader = BufReader::new(file);
+    let error_delay = 3000;
 
     for line in reader.lines() {
         let line = line?.trim().to_string();
@@ -53,38 +54,38 @@ pub fn parse_config(file_path: &str, system: &mut System) -> Result<(), Box<dyn 
         else if line.starts_with("planet") {
             match parse_planet(&line) {
                 Ok(planet) => system.add_planet(planet),
-                Err(err) => flash_error(err, 2000),
+                Err(err) => flash_error(err, error_delay),
             }
         }
         else if line.starts_with("spaceref") {
             match parse_spaceref(&line) {
                 Ok(targfeat) => system.add_feature(targfeat.target, targfeat.feature),
-                Err(err) => flash_error(err, 2000),
+                Err(err) => flash_error(err, error_delay),
             }
         }
         else if line.starts_with("orbit") {
             match parse_orbit(&line) {
                 Ok(targfeat) => system.add_feature(targfeat.target, targfeat.feature),
-                Err(err) => flash_error(err, 2000),
+                Err(err) => flash_error(err, error_delay),
             }
         }
         else if line.starts_with("ring") {
             match parse_ring(&line) {
                 Ok(targfeat) => system.add_feature(targfeat.target, targfeat.feature),
-                Err(err) => flash_error(err, 2000),
+                Err(err) => flash_error(err, error_delay),
             }
         }
         else if line.starts_with("moon") {
             match parse_moon(&line) {
                 Ok(targfeat) => system.add_feature(targfeat.target, targfeat.feature),
-                Err(err) => flash_error(err, 2000),
+                Err(err) => flash_error(err, error_delay),
             }
         }
         
-        if line.contains("orbital") {
-            match parse_sun_orbit(&line) {
+        if line.contains("orbital") || line.contains("planet") {
+            match parse_parent_orbit(&line) {
                 Ok(targfeat) => system.add_feature(targfeat.target, targfeat.feature),
-                Err(err) => flash_error(err, 2000),
+                Err(err) => flash_error(err, error_delay),
             }
         }
     }
@@ -182,15 +183,8 @@ fn parse_orbit(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
         else if target.is_none() {
             target = Some(token);
         }
-        else if token.contains('=') {
-            let parts: Vec<&str> = token.split('=').collect();
-            if parts.len() != 2 {
-                return Err("unmatched key".into());
-            }
-            let (key, value) = (parts[0], parts[1]);
-            if let "params" = key {
-                parse_orbit_specific(value, &mut orbit)?;
-            }
+        else if let Some(value) = token.strip_prefix("params=") {
+            parse_orbit_specific(value, &mut orbit)?;
         }
     }
 
@@ -223,9 +217,7 @@ fn parse_ring(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
             let (key, value) = (parts[0], parts[1]);
             match key {
                 "dimens" => {
-                    let parts: Vec<&str> = value.split(',').collect();
-                    rad = Some(parts[0].parse::<Float>()?);
-                    depth = Some(parts[1].parse::<Float>()?);
+                    parse_ring_specific(value, &mut rad, &mut depth)?;
                 }
                 "params" => {
                     parse_params_specific(value, &mut params)?;
@@ -243,27 +235,64 @@ fn parse_ring(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
 }
 
 fn parse_moon(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
-    todo!()
-}
+    let mut name = None;
+    let mut target = None;
+    let mut loc = None;
+    let mut rad = None;
+    let mut params = None;
+    let mut lightsource = false;
 
-fn get_texture(name: &str) -> Option<&str> {
-    match name {
-        "mercury" => Some(MERCURYPATH),
-        "venus" => Some(VENUSPATH),
-        "earth" => Some(EARTHPATH),
-        "mars" => Some(MARSPATH),
-        "jupiter" => Some(JUPITERPATH),
-        "saturn" => Some(SATURNPATH),
-        "uranus" => Some(URANUSPATH),
-        "neptune" => Some(NEPTUNEPATH),
-        "pluto" => Some(PLUTOPATH),
-        "sun" => Some(SUNPATH),
-        "moon" => Some(MOONPATH),
-        _ => None,
+    for token in data.split_whitespace() {
+        if token == "moon" {
+            continue;
+        }
+        else if name.is_none() {
+            name = Some(token);
+        }
+        else if rad.is_none() {
+            rad = Some(token.parse::<Float>()?);
+        }
+        else if token.contains('=') {
+            let parts: Vec<&str> = token.split('=').collect();
+            if parts.len() != 2 {
+                return Err("unmatched key".into());
+            }
+            let (key, value) = (parts[0], parts[1]);
+            match key {
+                "orbital" => {
+                    location_orbital(value, &mut loc)?;
+                }
+                "cartesian" => {
+                    location_cartesian(value, &mut loc)?;
+                }
+                "polar" => {
+                    location_polar(value, &mut loc)?;
+                }
+                "params" => {
+                    parse_params_specific(value, &mut params)?;
+                }
+                "lightsource" => {
+                    lightsource = value.parse::<bool>()?;
+                }
+                "target" => {
+                    target = Some(value);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if let (Some(name), Some(loc), Some(rad), Some(target)) = (name, loc, rad, target) {
+        let texture = get_texture(name);
+        Ok(TargetFeature::cons(target, Feature::Moon(
+            Planet::cons(name.to_owned(), loc, rad, texture, lightsource, params))))
+    }
+    else {
+        Err("missing requirements".into())
     }
 }
 
-fn parse_sun_orbit(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
+fn parse_parent_orbit(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
     let mut target = None;
     let mut orbit = None;
     for token in data.split_whitespace() {
@@ -278,7 +307,8 @@ fn parse_sun_orbit(data: &str) -> Result<TargetFeature, Box<dyn Error>> {
         }
     }
 
-    if let (Some(target), Some(orbit)) = (target, orbit) {
+    if let (Some(target), Some(mut orbit)) = (target, orbit) {
+        orbit.apply_lighting = false;
         Ok(TargetFeature::cons(target, Feature::Orbit(orbit)))
     }
     else {
@@ -298,8 +328,26 @@ fn parse_orbit_specific(value: &str, orbit: &mut Option<Orbit>) -> Result<(), Bo
     let argofperiapsis = split[4].parse::<Float>()?.to_radians();
     let trueanomaly = split[5].parse::<Float>()?.to_radians();
     let bary = Vec3::cons(0, 0, 0);
-    *orbit = Some(Orbit::cons(semimajor, eccentricity,
-        inclination, longitdueofascnode, argofperiapsis, trueanomaly, bary));
+    *orbit = Some(Orbit::cons(OrbitalParams::cons(semimajor, eccentricity, inclination,
+        longitdueofascnode, argofperiapsis, trueanomaly), bary, true));
+    Ok(())
+}
+
+fn parse_ring_specific(value: &str, rad: &mut Option<f32>, depth: &mut Option<f32>) -> Result<(), Box<dyn Error>> {
+    let parts: Vec<&str> = value.split(',').collect();
+    *rad = Some(parts[0].parse::<Float>()?);
+    *depth = Some(parts[1].parse::<Float>()?);
+    Ok(())
+}
+
+fn parse_params_specific(value: &str, params: &mut Option<PlanetParams>) -> Result<(), Box<dyn Error>> {
+    let split: Vec<&str> = value.split(',').collect();
+    if split.len() < 2 {
+        return Err("too few arguments".into());
+    }
+    let tilt = split[0].parse::<Float>()?.to_radians();
+    let rotation = split[1].parse::<Float>()?.to_radians();
+    *params = Some(PlanetParams::cons(tilt, rotation));
     Ok(())
 }
 
@@ -336,15 +384,21 @@ fn location_cartesian(value: &str, loc: &mut Option<Vec3>) -> Result<(), Box<dyn
     Ok(())
 }
 
-fn parse_params_specific(value: &str, params: &mut Option<PlanetParams>) -> Result<(), Box<dyn Error>> {
-    let split: Vec<&str> = value.split(',').collect();
-    if split.len() < 2 {
-        return Err("too few arguments".into());
+fn get_texture(name: &str) -> Option<&str> {
+    match name {
+        "mercury" => Some(MERCURYPATH),
+        "venus" => Some(VENUSPATH),
+        "earth" => Some(EARTHPATH),
+        "mars" => Some(MARSPATH),
+        "jupiter" => Some(JUPITERPATH),
+        "saturn" => Some(SATURNPATH),
+        "uranus" => Some(URANUSPATH),
+        "neptune" => Some(NEPTUNEPATH),
+        "pluto" => Some(PLUTOPATH),
+        "sun" => Some(SUNPATH),
+        "luna" => Some(MOONPATH),
+        _ => None,
     }
-    let tilt = split[0].parse::<Float>()?.to_radians();
-    let rotation = split[1].parse::<Float>()?.to_radians();
-    *params = Some(PlanetParams::cons(tilt, rotation));
-    Ok(())
 }
 
 pub struct Config {
@@ -353,6 +407,7 @@ pub struct Config {
     render_refs: bool,
     render_orbits: bool,
     termcharaspect: Float,
+    orbital_distance: Float,
 }
 
 impl Default for Config {
@@ -364,6 +419,7 @@ impl Default for Config {
             render_refs: false,
             render_orbits: false,
             termcharaspect: 2.0,
+            orbital_distance: 400.0,
         }
     }
 }
@@ -387,6 +443,10 @@ impl Config {
 
     pub fn render_refs(&self) -> bool {
         self.render_refs
+    }
+
+    pub fn orbital_distance(&self) -> Float {
+        self.orbital_distance
     }
 
     pub fn render_orbits(&self) -> bool {
@@ -431,6 +491,9 @@ pub fn general_config(file_path: &str) -> Result<Config, Box<dyn Error>> {
         }
         else if let Some(value) = line.strip_prefix("char_aspect=") {
             config.termcharaspect = value.parse()?;
+        }
+        else if let Some(value) = line.strip_prefix("orbital_distance=") {
+            config.orbital_distance = value.parse()?;
         }
     }
 

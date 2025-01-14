@@ -8,6 +8,8 @@ to clear up some misconceptions, this isn't an image generator. this a first per
 the relative planetary distances are to scale, the relative planet radii are to scale, but the radii / distance is not, if that makes sense...
 <br />
 additionally, the sun is sized down. it isn't to scale with anything
+<br />
+the planet's relative positions (euler angles) are all correct as of 01-01-2025 via NASA JPL Horizons. eventually this will will auto fetch the positions and update on its own 
 <br /><br />
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/mars_jupiter_background.png)
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/lighting_africa.png)

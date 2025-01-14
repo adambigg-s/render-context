@@ -2,6 +2,10 @@
 fully terminal based satellite tracking. true 3d rendering, raytraced lighting and realtime updates. made with no gl of any kind, everything is drawn into terminal with with text and ANSI escape codes
 <br />
 to clear up some misconceptions, this isn't an image generator. this a first person, 3d terminal solar system simulation that you can fly around in. it renders in real time and all in the terminal
+<br />
+the relative planetary distances are to scale, the relative planet radii are to scale, but the radii / distance is not, if that makes sense...
+<br />
+additionally, the sun is sized down. it isn't to scale with anything
 <br /><br />
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/mars_jupiter_background.png)
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/lighting_africa.png)

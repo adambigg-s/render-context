@@ -7,6 +7,7 @@ to clear up some misconceptions, this isn't an image generator. this a first per
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/lighting_africa.png)
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/jupiter_red_dot.png)
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/mars_pole.png)
+![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/orbits_reference.png)
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/moon.png)
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/neptune.png)
 ![alt text](https://github.com/adambigg-s/render-context/blob/main/term/examples/saturn.png)

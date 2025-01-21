@@ -22,9 +22,9 @@ use crate::viewmodel::ViewModel;
 
 
 
-const RES: usize = 2;
-const HEIGHT: usize = RES * 150;
-const WIDTH: usize = RES * 200;
+const RES: usize = 1;
+const HEIGHT: usize = RES * 384;
+const WIDTH: usize = RES * 512;
 const FPS: usize = 60;
 
 type Float = f32;
@@ -47,6 +47,7 @@ fn main() {
         WindowOptions {
             scale: Scale::X2,
             scale_mode: ScaleMode::Stretch,
+            topmost: true,
             ..Default::default()
         },
     ).unwrap();
@@ -70,7 +71,7 @@ fn main() {
     let wall2: Wall = Wall::cons(
         points[1],
         points[2],
-        45.0,
+        20.0,
     );
 
     while window.is_open() && !window.is_key_down(Key::Escape) {

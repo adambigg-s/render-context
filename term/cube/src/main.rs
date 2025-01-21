@@ -96,7 +96,6 @@ impl Buffer {
     fn to_str(&self) -> String {
         let mut string = String::new();
         self.visual.iter().enumerate().for_each(|(idx, ele)| {
-            string.push_str("\x1b[2m");
             if idx % self.width != 0 {
                 string.push(*ele);
             }

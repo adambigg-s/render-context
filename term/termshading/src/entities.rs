@@ -78,7 +78,7 @@ impl ViewModel {
     fn translate(&mut self, dir: Vec3) {
         let mut transdir = dir * self.transspeed;
         let rotation = Vec3::cons(0.0, -self.tilt, self.rot);
-        transdir.rotationmatxyz(rotation);
+        transdir.rotationxyz(rotation);
         self.pos += transdir;
     }
 

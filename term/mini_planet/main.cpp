@@ -1,6 +1,9 @@
 
 #include <cmath>
+#include <cstddef>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -8,21 +11,20 @@ using namespace std;
 
 const float PI = 3.14159265;
 const float TAU = 2 * PI;
+const string EARTHPATH = "earth_map.txt";
 
 class Color {
 public:
-    int red;
-    int green;
-    int blue;
+    int red, green, blue;
 
     static Color cons(int r, int g, int b) {
         return Color { r, g, b };
     }
 
     void darken(float lighting) {
-        red = (int)(red * lighting) - 1;
-        green = (int)(green * lighting) - 1;
-        blue = (int)(blue * lighting) - 1;
+        red = (int)(red * lighting);
+        green = (int)(green * lighting);
+        blue = (int)(blue * lighting);
     }
 
     string to_ansi_back() {
@@ -33,15 +35,13 @@ public:
 
 class Buffer {
 public:
-    int height;
-    int width;
+    int height, width;
     vector<Color> pixels;
     vector<float> depth;
 
     static Buffer cons(int height, int width) {
         return Buffer {
-            height,
-            width,
+            height, width,
             vector<Color>(width * height, Color::cons(0, 0, 0)),
             vector<float>(width * height, 1E9),
         };
@@ -82,19 +82,24 @@ public:
 
 class Vec3 {
 public:
-    float x; float y; float z;
+    float x, y, z;
 
     static Vec3 cons(float x, float y, float z) {
         return Vec3 { x, y, z };
     }
 
     void rotatez(float angle) {
-        float x = this->x; float y = this->y; float z = this->z;
-        float sint = sin(angle);
-        float cost = cos(angle);
+        float x = this->x, y = this->y, z = this->z;
+        float sint = sin(angle), cost = cos(angle);
         this->x = x * cost - y * sint;
         this->y = x * sint + y * cost;
-        this->z = z;
+    }
+
+    void rotatex(float angle) {
+        float x = this->x, y = this->y, z = this->z;
+        float sint = sin(angle), cost = cos(angle);
+        this->y = y * cost - z * sint;
+        this->z = y * sint + z * cost;
     }
 
     void normalize() {
@@ -107,11 +112,56 @@ public:
     }
 };
 
+class Texture {
+public:
+    int height, width;
+    vector<Color> texture;
+
+    static Texture cons(string texpath) {
+        ifstream file(texpath);
+
+        vector<Color> texture_data;
+        string line;
+        int width = 0, height = 0;
+
+        while (getline(file, line)) {
+            istringstream line_stream(line);
+            string pixel;
+            int curr_width = 0;
+            while (line_stream >> pixel) {
+                size_t first_delim = pixel.find(';');
+                size_t second_delim = pixel.find(';', first_delim + 1);
+                int red = stoi(pixel.substr(0, first_delim));
+                int green = stoi(pixel.substr(first_delim + 1, second_delim - first_delim - 1));
+                int blue = stoi(pixel.substr(second_delim + 1));
+                texture_data.push_back(Color::cons(red, green, blue));
+                curr_width += 1;
+            }
+            width = curr_width;
+            height += 1;
+        }
+        file.close();
+
+        return Texture { height, width, texture_data };
+    }
+
+    const Color get_at(float xfrac, float yfrac) {
+        int x = xfrac * width, y = yfrac * height;
+        return texture[y * width + x];
+    }
+};
+
 class Planet {
 public:
     float radius;
+    float rotation;
+    float tilt;
     Vec3 position;
-    vector<Color> texture;
+    Texture texture;
+
+    static Planet cons(float radius, Vec3 position, string texpath) {
+        return Planet { radius, 0, 0.419, position, Texture::cons(texpath) };
+    }
 };
 
 class Renderer {
@@ -123,21 +173,21 @@ public:
     string frame_buffer;
 
     void render_planet() {
-        float dphi = 0.03;
+        float dphi = 0.015;
         float dtheta = 0.5 * dphi;
-        for (float phi = -PI; phi < PI; phi += dphi) {
+        for (float phi = 0; phi < PI; phi += dphi) {
             for (float theta = 0; theta < TAU; theta += dtheta) {
                 float worldx = planet->radius * sin(phi) * cos(theta);
                 float worldy = planet->radius * sin(phi) * sin(theta);
                 float worldz = planet->radius * cos(phi);
 
                 Vec3 world = Vec3::cons(worldx, worldy, worldz);
+                world.rotatez(planet->rotation);
+                world.rotatex(planet->tilt);
                 Vec3 normal = world;
                 normal.normalize();
-                world.x += planet->position.x;
-                world.y += planet->position.y;
-                world.z += planet->position.z;
-                world.x -= camera.x;
+                world.x += planet->position.x; world.y += planet->position.x; world.z += planet->position.z;
+                world.x -= camera.x; world.y -= camera.y; world.z -= camera.z;
                 
                 if (world.x <= 0) {
                     continue;
@@ -150,8 +200,11 @@ public:
 
                 if (buffer->inbounds(screenx, screeny)) {
                     if (world.x < buffer->get_depth(screenx, screeny)) {
-                        Color color = Color::cons(253, 253, 253);
+                        Color color = planet->texture.get_at(theta / TAU, phi / PI);
                         float lighting = normal.inner_prod(&lightsource);
+                        if (lighting < 0.1) {
+                            lighting = 0.1;
+                        }
                         color.darken(lighting);
                         buffer->set(screenx, screeny, color, world.x);
                     }
@@ -177,16 +230,16 @@ public:
 
 int main() {
     Buffer buffer = Buffer::cons(70, 200);
-    Planet planet = Planet { 25, Vec3::cons(0, 0, 0) };
-    Vec3 camera_pos = Vec3::cons(-70, 0, 0);
-    Vec3 lighting = Vec3::cons(1, 1, 1);
+    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH);
+    Vec3 camera_pos = Vec3::cons(-55, 0, 0);
+    Vec3 lighting = Vec3::cons(-1, 1, 0.5);
     lighting.normalize();
-    
     Renderer renderer = Renderer { &planet, &buffer, camera_pos, lighting };
-
+    cout << "\x1b[?25l";
     while (true) {
         buffer.clear();
-        renderer.lightsource.rotatez(0.1);
+        renderer.lightsource.rotatez(0.01);
+        renderer.planet->rotation -= 0.01;
         renderer.render_planet();
         renderer.display_to_screen();
     }

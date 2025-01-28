@@ -57,13 +57,13 @@ impl Vec3 {
         self.z = z;
     }
 
-    pub fn rotationmatxyz(&mut self, angles: Vec3) {
+    pub fn rotationxyz(&mut self, angles: Vec3) {
         self.rotatex(angles.x);
         self.rotatey(angles.y);
         self.rotatez(angles.z);
     }
 
-    pub fn rotationmatzyx(&mut self, angles: Vec3) {
+    pub fn roationzyx(&mut self, angles: Vec3) {
         self.rotatez(angles.z);
         self.rotatey(angles.y);
         self.rotatex(angles.x);

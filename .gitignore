@@ -27,3 +27,6 @@ examples/
 # Executables
 *.out
 *.exe
+
+# Object files
+*.o

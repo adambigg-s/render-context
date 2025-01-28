@@ -5,11 +5,11 @@ SRC = main.cpp
 OBJ = main.o
 EXE = main.exe
 
-LIBRARY_PATH = ./lib
-LIBS = -lraylib -lopengl32 -lgdi32 -lwinmm
+LIBRARY_PATH =
+LIBS = 
 
 $(EXE): $(OBJ)
-	$(CXX) $(OBJ) -o $(EXE) -L$(LIBRARY_PATH) $(LIBS)
+	$(CXX) $(OBJ) -o $(EXE)
 
 $(OBJ): $(SRC)
 	$(CXX) $(CXXFLAGS) -c $(SRC)

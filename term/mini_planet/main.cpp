@@ -122,38 +122,48 @@ class Texture {
 public:
     int height, width;
     vector<Color> texture;
+    
+    static Texture cons(string path) {
+        vector<Color> texture;
+        int width = 0;
+        int height = 0;
 
-    static Texture cons(string texpath) {
-        ifstream file(texpath);
-
-        vector<Color> texture_data;
+        vector<string> lines;
         string line;
-        int width = 0, height = 0;
-
-        while (getline(file, line)) {
-            istringstream line_stream(line);
-            string pixel;
-            int curr_width = 0;
-            while (line_stream >> pixel) {
-                size_t first_delim = pixel.find(';');
-                size_t second_delim = pixel.find(';', first_delim + 1);
-                int red = stoi(pixel.substr(0, first_delim));
-                int green = stoi(pixel.substr(first_delim + 1, second_delim - first_delim - 1));
-                int blue = stoi(pixel.substr(second_delim + 1));
-                texture_data.push_back(Color::cons(red, green, blue));
-                curr_width += 1;
-            }
-            width = curr_width;
+        ifstream file(path);
+        while(getline(file, line)) {
+            lines.push_back(line);
             height += 1;
         }
         file.close();
 
-        return Texture { height, width, texture_data };
+        for (string& line : lines) {
+            istringstream streamline(line);
+            string token;
+            int currwidth = 0;
+
+            while (getline(streamline, token, ' ')) {
+                istringstream token_stream(token);
+                string component;
+                vector<int> rgb;
+
+                while(getline(token_stream, component, ';')) {
+                    rgb.push_back(stoi(component));
+                }
+                texture.push_back(Color::cons(rgb[0], rgb[1], rgb[2]));
+                currwidth += 1;
+            }
+
+            width = currwidth;
+        }
+
+        return Texture { height, width, texture };
     }
 
     const Color get_at(float xfrac, float yfrac) {
         int x = xfrac * width, y = yfrac * height;
-        return texture[y * width + x];
+        int xtrans = width-1 - x;
+        return texture[y * width + xtrans];
     }
 };
 
@@ -237,7 +247,7 @@ public:
 
 int main() {
     Buffer buffer = Buffer::cons(70, 200);
-    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH, 0.15);
+    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH, 0.45);
     Vec3 camera_pos = Vec3::cons(-55, 0, 0);
     Vec3 lighting = Vec3::cons(-1, 1, 0.5);
     lighting.normalize();

@@ -22,14 +22,20 @@ public:
     }
 
     void darken(float lighting) {
+        if (lighting < 0.1) {
+            lighting = 0.1;
+        }
         red = (int)(red * lighting);
         green = (int)(green * lighting);
         blue = (int)(blue * lighting);
     }
 
     string to_ansi_back() {
+        if (red == 0 && green == 0 && blue == 0) {
+            return "\x1b[0m ";
+        }
         return "\x1b[48;2;" + to_string(red) + ";" + to_string(green)
-               + ";" + to_string(blue) + "m" + ' ';
+               + ";" + to_string(blue) + "m ";
     }
 };
 
@@ -159,8 +165,8 @@ public:
     Vec3 position;
     Texture texture;
 
-    static Planet cons(float radius, Vec3 position, string texpath) {
-        return Planet { radius, 0, 0.419, position, Texture::cons(texpath) };
+    static Planet cons(float radius, Vec3 position, string texpath, float tilt) {
+        return Planet { radius, 0, tilt, position, Texture::cons(texpath) };
     }
 };
 
@@ -180,34 +186,34 @@ public:
                 float worldx = planet->radius * sin(phi) * cos(theta);
                 float worldy = planet->radius * sin(phi) * sin(theta);
                 float worldz = planet->radius * cos(phi);
-
                 Vec3 world = Vec3::cons(worldx, worldy, worldz);
+                
                 world.rotatez(planet->rotation);
                 world.rotatex(planet->tilt);
+                
                 Vec3 normal = world;
                 normal.normalize();
-                world.x += planet->position.x; world.y += planet->position.x; world.z += planet->position.z;
-                world.x -= camera.x; world.y -= camera.y; world.z -= camera.z;
                 
-                if (world.x <= 0) {
-                    continue;
-                }
-
+                world.x += planet->position.x;
+                world.y += planet->position.x;
+                world.z += planet->position.z;
+                world.x -= camera.x;
+                world.y -= camera.y;
+                world.z -= camera.z;
+                
                 float scalex = 100;
                 float scaley = scalex * 0.5;
                 float screenx = (int)(world.y / world.x * scalex + buffer->halfwidth());
                 float screeny = (int)(-world.z / world.x * scaley + buffer->halfheight());
 
-                if (buffer->inbounds(screenx, screeny)) {
-                    if (world.x < buffer->get_depth(screenx, screeny)) {
-                        Color color = planet->texture.get_at(theta / TAU, phi / PI);
-                        float lighting = normal.inner_prod(&lightsource);
-                        if (lighting < 0.1) {
-                            lighting = 0.1;
-                        }
-                        color.darken(lighting);
-                        buffer->set(screenx, screeny, color, world.x);
-                    }
+                if (buffer->inbounds(screenx, screeny)
+                    && world.x < buffer->get_depth(screenx, screeny))
+                {
+                    Color color = planet->texture.get_at(theta / TAU, phi / PI);
+                    float lighting = normal.inner_prod(&lightsource);
+                    color.darken(lighting);
+
+                    buffer->set(screenx, screeny, color, world.x);
                 }
             }
         }
@@ -217,6 +223,7 @@ public:
         cout << "\x1b[H";
         frame_buffer.clear();
         for (int y = 0; y < buffer->height; y += 1) {
+            frame_buffer += "\x1b[1m";
             for (int x = 0; x < buffer->width; x += 1) {
                 int idx = buffer->idx(x,y);
                 frame_buffer += buffer->pixels[idx].to_ansi_back();
@@ -230,16 +237,20 @@ public:
 
 int main() {
     Buffer buffer = Buffer::cons(70, 200);
-    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH);
+    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH, 0.15);
     Vec3 camera_pos = Vec3::cons(-55, 0, 0);
     Vec3 lighting = Vec3::cons(-1, 1, 0.5);
     lighting.normalize();
+
     Renderer renderer = Renderer { &planet, &buffer, camera_pos, lighting };
+
     cout << "\x1b[?25l";
     while (true) {
+        {
+            renderer.lightsource.rotatez(0.01);
+            renderer.planet->rotation -= 0.01;
+        }
         buffer.clear();
-        renderer.lightsource.rotatez(0.01);
-        renderer.planet->rotation -= 0.01;
         renderer.render_planet();
         renderer.display_to_screen();
     }

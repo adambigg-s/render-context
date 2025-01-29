@@ -63,21 +63,21 @@ impl Vec3 {
         self.rotatez(angles.z);
     }
 
-    pub fn roationzyx(&mut self, angles: Vec3) {
+    pub fn rotationzyx(&mut self, angles: Vec3) {
         self.rotatez(angles.z);
         self.rotatey(angles.y);
         self.rotatex(angles.x);
     }
 
-    pub fn reflex(&mut self) {
+    pub fn reflx(&mut self) {
         self.x = -self.x;
     }
 
-    pub fn refley(&mut self) {
+    pub fn refly(&mut self) {
         self.y = -self.y;
     }
 
-    pub fn reflez(&mut self) {
+    pub fn reflz(&mut self) {
         self.z = -self.z;
     }
 
@@ -161,7 +161,7 @@ pub fn orbital_cartesian_transformation(orbit: &Orbit) -> Vec3 {
     vec.rotatez(argofperiapsis);
     vec.rotatex(inclination);
     vec.rotatez(longitudeascnode);
-    vec.reflex();
+    vec.reflx();
     vec += *barycenter;
     vec
 }

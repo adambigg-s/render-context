@@ -23,7 +23,6 @@ const PATH: [&str; 11] = [
 
 const MODE: Mode = Mode::Color;
 const WIDTHPRIME: u32 = 720;
-
 const CHARS: &[char] = &[' ', '.', ':', '-', '~', '=', '+', '*', '#', '%', '@'];
 
 

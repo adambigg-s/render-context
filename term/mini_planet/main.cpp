@@ -1,17 +1,22 @@
 
+
+
 #include <cmath>
-#include <cstddef>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
 
+
+
 using namespace std;
 
 const float PI = 3.14159265;
 const float TAU = 2 * PI;
 const string EARTHPATH = "earth_map.txt";
+
+
 
 class Color {
 public:
@@ -21,9 +26,9 @@ public:
         return Color { r, g, b };
     }
 
-    void darken(float lighting) {
-        if (lighting < 0.1) {
-            lighting = 0.1;
+    void attenuate(float lighting) {
+        if (lighting < 0.15) {
+            lighting = 0.15;
         }
         red = (int)(red * lighting);
         green = (int)(green * lighting);
@@ -38,6 +43,8 @@ public:
                + ";" + to_string(blue) + "m ";
     }
 };
+
+
 
 class Buffer {
 public:
@@ -86,6 +93,8 @@ public:
     }
 };
 
+
+
 class Vec3 {
 public:
     float x, y, z;
@@ -94,19 +103,35 @@ public:
         return Vec3 { x, y, z };
     }
 
+    void rotatex(float angle) {
+        float x = this->x, y = this->y, z = this->z;
+        float sint = sin(angle), cost = cos(angle);
+        this->x = x;
+        this->y = y * cost - z * sint;
+        this->z = y * sint + z * cost;
+    }
+
+    // void rotatey(float angle) {
+    //     float x = this->x, y = this->y, z = this->z;
+    //     float sint = sin(angle), cost = cos(angle);
+    //     this->x = x * cost + z * sint;
+    //     this->y = y;
+    //     this->z = -x * sint + z * cost;
+    // }
+
     void rotatez(float angle) {
         float x = this->x, y = this->y, z = this->z;
         float sint = sin(angle), cost = cos(angle);
         this->x = x * cost - y * sint;
         this->y = x * sint + y * cost;
+        this->z = z;
     }
 
-    void rotatex(float angle) {
-        float x = this->x, y = this->y, z = this->z;
-        float sint = sin(angle), cost = cos(angle);
-        this->y = y * cost - z * sint;
-        this->z = y * sint + z * cost;
-    }
+    // void rotatezyx(Vec3 angles) {
+    //     this->rotatez(angles.z);
+    //     this->rotatey(angles.y);
+    //     this->rotatex(angles.x);
+    // }
 
     void normalize() {
         float length = sqrt(this->inner_prod(this));
@@ -117,6 +142,8 @@ public:
         return x * other->x + y * other->y + z * other->z;
     }
 };
+
+
 
 class Texture {
 public:
@@ -167,6 +194,8 @@ public:
     }
 };
 
+
+
 class Planet {
 public:
     float radius;
@@ -179,6 +208,8 @@ public:
         return Planet { radius, 0, tilt, position, Texture::cons(texpath) };
     }
 };
+
+
 
 class Renderer {
 public:
@@ -216,12 +247,13 @@ public:
                 float screenx = (int)(world.y / world.x * scalex + buffer->halfwidth());
                 float screeny = (int)(-world.z / world.x * scaley + buffer->halfheight());
 
-                if (buffer->inbounds(screenx, screeny)
-                    && world.x < buffer->get_depth(screenx, screeny))
-                {
+                if (buffer->inbounds(screenx, screeny)) {
+                    if (world.x > buffer->get_depth(screenx, screeny)) {
+                        continue;
+                    }
                     Color color = planet->texture.get_at(theta / TAU, phi / PI);
                     float lighting = normal.inner_prod(&lightsource);
-                    color.darken(lighting);
+                    color.attenuate(lighting);
 
                     buffer->set(screenx, screeny, color, world.x);
                 }
@@ -244,6 +276,8 @@ public:
         cout.flush();
     }
 };
+
+
 
 int main() {
     Buffer buffer = Buffer::cons(70, 200);

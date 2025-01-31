@@ -35,12 +35,16 @@ public:
         blue = (int)(blue * lighting);
     }
 
-    string to_ansi_back() {
-        if (red == 0 && green == 0 && blue == 0) {
+    string to_ansi_back() const {
+        if (this->is_black()) {
             return "\x1b[0m ";
         }
         return "\x1b[48;2;" + to_string(red) + ";" + to_string(green)
                + ";" + to_string(blue) + "m ";
+    }
+
+    bool is_black() const {
+        return red == 0 && green == 0 && blue == 0;
     }
 };
 
@@ -71,24 +75,24 @@ public:
         depth.assign(width * height, 1E9);
     }
 
-    const float get_depth(int x, int y) {
+    float get_depth(int x, int y) const {
         int idx = this->idx(x, y);
         return depth[idx];
     }
 
-    const int halfheight() {
+    int halfheight() const {
         return height / 2;
     }
 
-    const int halfwidth() {
+    int halfwidth() const {
         return width / 2;
     }
     
-    const bool inbounds(int x, int y) {
+    bool inbounds(int x, int y) const {
         return x < width && y < height;
     }
 
-    const int idx(int x, int y) {
+    int idx(int x, int y) const {
         return y * width + x;
     }
 };
@@ -138,7 +142,7 @@ public:
         x /= length; y /= length; z /= length;
     }
 
-    const float inner_prod(Vec3* other) {
+    float inner_prod(Vec3* other) const {
         return x * other->x + y * other->y + z * other->z;
     }
 };
@@ -190,7 +194,7 @@ public:
         return Texture { height, width, texture };
     }
 
-    const Color get_at(float xfrac, float yfrac) {
+    Color get_at(float xfrac, float yfrac) const {
         int x = xfrac * width, y = yfrac * height;
         int xtrans = width-1 - x;
         return texture[y * width + xtrans];
@@ -228,9 +232,11 @@ public:
         float dtheta = 0.5 * dphi;
         for (float phi = 0; phi < PI; phi += dphi) {
             for (float theta = 0; theta < TAU; theta += dtheta) {
-                float worldx = planet->radius * sin(phi) * cos(theta);
-                float worldy = planet->radius * sin(phi) * sin(theta);
-                float worldz = planet->radius * cos(phi);
+                float sint = sin(theta), cost = cos(theta);
+                float sinp = sin(phi), cosp = cos(phi);
+                float worldx = planet->radius * sinp * cost;
+                float worldy = planet->radius * sinp * sint;
+                float worldz = planet->radius * cosp;
                 Vec3 world = Vec3::cons(worldx, worldy, worldz);
                 
                 world.rotatez(planet->rotation);
@@ -247,15 +253,16 @@ public:
                 world.y -= camera.y;
                 world.z -= camera.z;
                 
-                float scalex = 100;
+                if (world.x <= 0) continue;
+                
+                float scalex = 200;
                 float scaley = scalex * 0.5;
                 float screenx = (int)(world.y / world.x * scalex + buffer->halfwidth());
                 float screeny = (int)(-world.z / world.x * scaley + buffer->halfheight());
 
                 if (buffer->inbounds(screenx, screeny)) {
-                    if (world.x > buffer->get_depth(screenx, screeny)) {
-                        continue;
-                    }
+                    if (world.x > buffer->get_depth(screenx, screeny)) continue;
+                    
                     Color color = planet->texture.get_at(theta / TAU, phi / PI);
                     float lighting = normal.inner_prod(&lightsource);
                     color.attenuate(lighting);
@@ -285,9 +292,10 @@ public:
 
 
 int main() {
-    Buffer buffer = Buffer::cons(70, 200);
-    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH, 0.50, PI / 2);
-    Vec3 camera_pos = Vec3::cons(-55, 0, 0);
+    // Buffer buffer = Buffer::cons(70, 200);
+    Buffer buffer = Buffer::cons(65, 130);
+    Planet planet = Planet::cons(27, Vec3::cons(0, 0, 0), EARTHPATH, 0.50, -PI / 2);
+    Vec3 camera_pos = Vec3::cons(-100, 0, 0);
     Vec3 lighting = Vec3::cons(-1, 1, 0.5);
     lighting.normalize();
 
@@ -297,8 +305,9 @@ int main() {
     cout << "\x1b[2J";
     while (true) {
         {
-            lighting.rotatez(-0.05);
-            planet.rotation += 0.01;
+            renderer.lightsource.rotatez(0.015);
+            planet.rotation -= 0.015;
+            planet.tilt += 0.0015;
         }
         buffer.clear();
         renderer.render_planet();

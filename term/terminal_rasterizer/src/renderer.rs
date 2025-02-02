@@ -131,19 +131,37 @@ impl<'d> Renderer<'d> {
             self.draw_lhs_tri(&a, &b, &c);
         }
 
-        self.fill_scan_convert(a.y, c.y);
+        self.fill_scan_convert(a.y, c.y, &a, &b, &c);
     }
 
-    fn fill_scan_convert(&mut self, min: Int, max: Int) {
+    fn fill_scan_convert(&mut self, min: Int, max: Int, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
+        let color_a = Color::cons(255, 0, 0);
+        let color_b = Color::cons(0, 255, 0);
+        let color_c = Color::cons(0, 0, 255);
         for y in max..min {
             let y = y as usize;
             let test = self.scanbuffer.scan[y];
             for x in test.0..=test.1 {
                 if self.buffer.inbounds(x, y) {
-                    self.buffer.set(x, y, Color::cons(255, 0, 255), 1.);
+                    let total_area = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+                    let alpha = ((b.y - c.y) * (x as Int - c.x) + (c.x - b.x) * (y as Int - c.y)) as Float / total_area as Float;
+                    let beta = ((c.y - a.y) * (x as Int - c.x) + (a.x - c.x) * (y as Int - c.y)) as Float / total_area as Float;
+                    let gamma = 1.0 - alpha - beta;
+
+                    if alpha >= 0. && beta >= 0. && gamma >= 0. {
+                        let color = self.interpolate_color(&color_a, &color_b, &color_c, alpha, beta, gamma);
+                        self.buffer.set(x, y, color, 1.);
+                    }
                 }
             }
         }
+    }
+
+    fn interpolate_color(&self, a: &Color, b: &Color, c: &Color, alpha: Float, beta: Float, gamma: Float) -> Color {
+        let red = (a.red as Float + alpha + b.red as Float * beta + c.red as Float * gamma) as u8;
+        let green = (a.green as Float + alpha + b.green as Float * beta + c.green as Float * gamma) as u8;
+        let blue = (a.blue as Float + alpha + b.blue as Float * beta + c.blue as Float * gamma) as u8;
+        Color::cons(red, green, blue)
     }
 
     fn draw_rhs_tri(&mut self, a: &Vec2i, b: &Vec2i, c: &Vec2i) {

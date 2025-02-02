@@ -101,9 +101,6 @@ impl<'d> Renderer<'d> {
     }
 
     pub fn render_triangle(&mut self) {
-        // this current tri is defined in world space
-        // we need to convert it into screenspace coordinates
-        // then rasterize on the screen
         let Triangle { mut a, mut b, mut c } = *self.tri;
         a -= *self.camera;
         b -= *self.camera;
@@ -119,26 +116,27 @@ impl<'d> Renderer<'d> {
         if b.y > a.y {
             (a, b) = (b, a);
         }
+        if c.y > b.y {
+            (c, b) = (b, c);
+        }
+        assert!(a.y >= b.y && b.y >= c.y);
 
-        let u = a - c;
-        let v = a - b;
+        let u = b - a;
+        let v = c - a;
 
-        if u.det(&v) <= 0 {
-            self.draw_rhs_tri(&a, &c, &b);
+        if u.det(&v) >= 0 {
+            self.draw_rhs_tri(&a, &b, &c);
         }
         else {
-            self.draw_lhs_tri(&a, &c, &b);
+            self.draw_lhs_tri(&a, &b, &c);
         }
 
-        self.draw_line(&a, &b);
-        self.draw_line(&a, &c);
-        self.draw_line(&b, &c);
-
-        self.fill_scan_convert();
+        self.fill_scan_convert(a.y, c.y);
     }
 
-    fn fill_scan_convert(&mut self) {
-        for y in 0..self.scanbuffer.height {
+    fn fill_scan_convert(&mut self, min: Int, max: Int) {
+        for y in max..min {
+            let y = y as usize;
             let test = self.scanbuffer.scan[y];
             for x in test.0..=test.1 {
                 if self.buffer.inbounds(x, y) {
@@ -174,7 +172,7 @@ impl<'d> Renderer<'d> {
 
         loop {
             if y0 < self.scanbuffer.height as Int {
-                self.scanbuffer.set_high(y0 as usize, x0 as usize);
+                self.scanbuffer.set_low(y0 as usize, x0 as usize);
             }
             let e2 = 2 * error;
             if e2 >= dy {

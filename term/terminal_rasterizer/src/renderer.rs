@@ -158,9 +158,9 @@ impl<'d> Renderer<'d> {
     }
 
     fn interpolate_color(&self, a: &Color, b: &Color, c: &Color, alpha: Float, beta: Float, gamma: Float) -> Color {
-        let red = (a.red as Float + alpha + b.red as Float * beta + c.red as Float * gamma) as u8;
-        let green = (a.green as Float + alpha + b.green as Float * beta + c.green as Float * gamma) as u8;
-        let blue = (a.blue as Float + alpha + b.blue as Float * beta + c.blue as Float * gamma) as u8;
+        let red = (a.red as Float * alpha + b.red as Float * beta + c.red as Float * gamma) as u8;
+        let green = (a.green as Float * alpha + b.green as Float * beta + c.green as Float * gamma) as u8;
+        let blue = (a.blue as Float * alpha + b.blue as Float * beta + c.blue as Float * gamma) as u8;
         Color::cons(red, green, blue)
     }
 

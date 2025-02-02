@@ -28,26 +28,24 @@ const TERMHEIGHTWIDTH: Float = 2.05;
 
 
 fn main() {
-    let mut buffer = Buffer::cons(70, 200);
+    let mut buffer = Buffer::cons(70, 250);
     let mut fbuffer = String::with_capacity(buffer.width * buffer.height * 30);
     let camera = Vec3::cons(-25, 0, 0);
 
-    let mut tri = Triangle::cons(Vec3::cons(0, 0, 4), Vec3::cons(0, 4, -3), Vec3::cons(0, -5, -1));
+    let mut tri = Triangle::cons(Vec3::cons(0, 2, 5), Vec3::cons(0, -5, 0), Vec3::cons(0, 3, -4));
 
     print!("\x1b[?25l");
     loop {
         buffer.clear();
 
-        buffer.set(0, 0, Color::cons(0, 255, 255), 1.);
-        buffer.set(buffer.width-1, buffer.height-1, Color::cons(0, 255, 255), 1.);
+        // buffer.set(0, 0, Color::cons(0, 255, 255), 1.);
+        // buffer.set(buffer.width-1, buffer.height-1, Color::cons(0, 255, 255), 1.);
 
         let mut renderer = Renderer::cons(&mut buffer, &mut fbuffer, &tri, &camera);
         renderer.render_triangle();
         renderer.render_to_screen();
 
-        tri.rotatex(0.03);
-        tri.rotatey(0.03);
-        tri.rotatez(0.01);
+        tri.rotatez(0.03);
 
         sleep(Duration::from_millis(15));
     }

@@ -30,7 +30,7 @@ const TERMHEIGHTWIDTH: Float = 2.05;
 fn main() {
     let mut buffer = Buffer::cons(55, 150);
     let mut fbuffer = String::with_capacity(buffer.width * buffer.height * 30);
-    let camera = Vec3::cons(-25, 0, 0);
+    let camera = Vec3::cons(-30, 0, 0);
 
     let mut tri = Triangle::cons(Vec3::cons(0, 0, 4), Vec3::cons(0, 4, -3), Vec3::cons(0, -5, -1));
 
@@ -45,9 +45,7 @@ fn main() {
         renderer.render_triangle();
         renderer.render_to_screen();
 
-        // tri.rotatex(0.03);
-        // tri.rotatey(0.01);
-        // tri.rotatez(0.01);
+        tri.rotatex(0.03);
 
         sleep(Duration::from_millis(25));
     }

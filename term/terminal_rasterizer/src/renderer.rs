@@ -1,7 +1,7 @@
 
 
 
-use std::io::{stdout, Write};
+use std::{io::{stdout, Write}, mem::swap};
 
 use crate::{geometry::Triangle, math::{Vec2i, Vec2u, Vec3}, Float, Int, SCREENSCALE, TERMHEIGHTWIDTH};
 
@@ -109,14 +109,21 @@ impl<'d> Renderer<'d> {
         b -= *self.camera;
         c -= *self.camera;
 
-        let a = self.view_to_screen(&a);
-        let b = self.view_to_screen(&b);
-        let c = self.view_to_screen(&c);
+        let mut a = self.view_to_screen(&a);
+        let mut b = self.view_to_screen(&b);
+        let mut c = self.view_to_screen(&c);
 
-        let u = a - b;
-        let v = a - c;
+        if c.y > b.y {
+            (c, b) = (b, c);
+        }
+        if b.y > a.y {
+            (a, b) = (b, a);
+        }
 
-        if u.det(&v) >= 0 {
+        let u = a - c;
+        let v = a - b;
+
+        if u.det(&v) <= 0 {
             self.draw_rhs_tri(&a, &c, &b);
         }
         else {
@@ -142,15 +149,15 @@ impl<'d> Renderer<'d> {
     }
 
     fn draw_rhs_tri(&mut self, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
-        self.scan_convert_low(a, c);
-        self.scan_convert_high(a, b);
-        self.scan_convert_high(b, c);
+        self.scan_convert_high(a, c);
+        self.scan_convert_low(a, b);
+        self.scan_convert_low(b, c);
     }
 
     fn draw_lhs_tri(&mut self, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
-        self.scan_convert_low(a, b);
-        self.scan_convert_low(b, c);
-        self.scan_convert_high(a, c);
+        self.scan_convert_low(a, c);
+        self.scan_convert_high(a, b);
+        self.scan_convert_high(b, c);
     }
 
     fn scan_convert_low(&mut self, start: &Vec2i, end: &Vec2i) {

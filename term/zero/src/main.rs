@@ -1,3 +1,4 @@
+#![allow(clippy::approx_constant)]
 
 
 
@@ -28,7 +29,7 @@ const TERMHEIGHTWIDTH: Float = 2.05;
 fn main() {
     let mut buffer: Buffer = Buffer::cons(55, 170);
     let mut sphere: Sphere = Sphere::cons(20., Vec3::cons(0., 0., 0.),
-        Some("./../render-context/term/planet_textures/mars_map.txt"),
+        Some("../planet_textures/mars_map.txt"),
     );
     let mut light = Vec3::cons(-1., 0., 0.2);
     let camera = Vec3::cons(-120., 0., 0.);
@@ -41,6 +42,7 @@ fn main() {
         {
             sphere.rotation.z += -0.01;
             sphere.rotation.x += 0.005;
+            sphere.center.x += 0.01;
             light.rotatez(0.01);
         }
 
@@ -48,7 +50,7 @@ fn main() {
         renderer.render_sphere();
         renderer.render_to_screen();
 
-        sleep(Duration::from_millis(30));
+        sleep(Duration::from_millis(1));
     }
 }
 
@@ -139,7 +141,7 @@ impl Color {
         Color { red, green, blue }
     }
 
-    fn to_ansi_back(&self) -> String {
+    fn to_ansi_back(self) -> String {
         format!("\x1b[48;2;{};{};{}m", self.red, self.green, self.blue)
     }
 
@@ -223,7 +225,7 @@ impl Texture {
             let mut linewidth = 0;
             line.split_whitespace().for_each(|col| {
                 let mut color = Color::from_str(col);
-                color.attenuate(2.0);
+                color.attenuate(1.1);
                 texture.push(color);
                 linewidth += 1;
             });
@@ -235,7 +237,7 @@ impl Texture {
     }
 
     fn get_at(&self, xfrac: Float, yfrac: Float) -> Color {
-        let texx = self.width - 1 - ((xfrac * self.width as Float) as usize);
+        let texx = self.width-1 - ((xfrac * self.width as Float) as usize);
         let texy = (yfrac * self.height as Float) as usize;
         self.texture[texy * self.width + texx]
     }
@@ -314,7 +316,7 @@ impl<'d> Renderer<'d> {
                 if self.buffer.inbounds(scrx, scry) && self.buffer.get_depth(scrx, scry) >= world.x {
                     let mut color = Color::cons(0, 255, 255);
                     if let Some(texture) = &self.sphere.texture {
-                        color = texture.get_at(theta / TAU, phi / TAU);
+                        color = texture.get_at(theta / TAU, phi / PI);
                     }
                     let lighting = self.calc_lighting(&normal);
                     color.attenuate(lighting);
@@ -332,9 +334,7 @@ impl<'d> Renderer<'d> {
     #[rustfmt::skip]
     fn render_to_screen(&mut self) {
         self.fbuffer.clear();
-        self.fbuffer.push_str("\x1b[2J");
         self.fbuffer.push_str("\x1b[H");
-        self.fbuffer.push_str("\n");
         for y in 0..self.buffer.height {
             for x in 0..self.buffer.width {
                 let idx = self.buffer.idx(x, y);
@@ -350,7 +350,7 @@ impl<'d> Renderer<'d> {
             }
             self.fbuffer.push_str("\x1b[0m\n");
         }
-        println!("{}", self.fbuffer);
+        print!("{}", self.fbuffer);
         stdout().flush().unwrap();
     }
 }

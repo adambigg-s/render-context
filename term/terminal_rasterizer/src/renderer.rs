@@ -1,9 +1,12 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
 
 
 
-use std::{io::{stdout, Write}, mem::swap};
+use std::io::{stdout, Write};
 
-use crate::{geometry::Triangle, math::{Vec2i, Vec2u, Vec3}, Float, Int, SCREENSCALE, TERMHEIGHTWIDTH};
+use crate::{Float, Int, SCREENSCALE, TERMHEIGHTWIDTH};
+use crate::math::{Vec2i, Vec2u, Vec3};
+use crate::geometry::{Mesh, Triangle};
 
 
 
@@ -22,6 +25,7 @@ impl Color {
         format!("\x1b[48;2;{};{};{}m", self.red, self.green, self.blue)
     }
 
+    #[allow(dead_code)]
     pub fn attenuate(&mut self, lighting: Float) {
         self.red = ((self.red as Float) * lighting) as u8;
         self.green = ((self.green as Float) * lighting) as u8;
@@ -33,33 +37,22 @@ impl Color {
     }
 }
 
-#[rustfmt::skip]
 pub struct Buffer {
     pub height: usize, pub width: usize,
     pixels: Vec<Color>,
-    depth: Vec<Float>,
 }
 
 impl Buffer {
-    #[rustfmt::skip]
     pub fn cons(height: usize, width: usize) -> Buffer {
-        Buffer {
-            height, width,
-            pixels: vec![Color::cons(0, 0, 0); width * height], depth: vec![1E9; width * height],
-        }
+        Buffer { height, width, pixels: vec![Color::cons(0, 0, 0); width * height] }
     }
 
-    pub fn set(&mut self, x: usize, y: usize, color: Color, depth: Float) {
+    pub fn set(&mut self, x: usize, y: usize, color: Color) {
         {
             debug_assert!(self.inbounds(x, y));
         }
         let idx = self.idx(x, y);
         self.pixels[idx] = color;
-        self.depth[idx] = depth;
-    }
-
-    pub fn get_depth(&self, x: usize, y: usize) -> Float {
-        self.depth[self.idx(x, y)]
     }
 
     pub fn get_half_height(&self) -> Float {
@@ -72,14 +65,13 @@ impl Buffer {
 
     pub fn clear(&mut self) {
         self.pixels.fill(Color::cons(0, 0, 0));
-        self.depth.fill(1E9);
     }
 
-    pub fn idx(&self, x: usize, y: usize) -> usize {
+    fn idx(&self, x: usize, y: usize) -> usize {
         y * self.width + x
     }
 
-    pub fn inbounds(&self, x: usize, y: usize) -> bool {
+    fn inbounds(&self, x: usize, y: usize) -> bool {
         x < self.width && y < self.height
     }
 }
@@ -88,28 +80,45 @@ pub struct Renderer<'d> {
     buffer: &'d mut Buffer,
     fbuffer: &'d mut String,
     scanbuffer: ScanBuffer,
-    tri: &'d Triangle,
+    mesh: &'d Mesh,
     camera: &'d Vec3,
 }
 
 impl<'d> Renderer<'d> {
     pub fn cons(
-        buffer: &'d mut Buffer, fbuffer: &'d mut String, tri: &'d Triangle, camera: &'d Vec3
+        buffer: &'d mut Buffer, fbuffer: &'d mut String, mesh: &'d Mesh, camera: &'d Vec3
     ) -> Renderer<'d> {
         let scanbuffer = ScanBuffer::cons(buffer.height);
-        Renderer { buffer, fbuffer, scanbuffer, tri, camera }
+        Renderer { buffer, fbuffer, scanbuffer, mesh, camera }
     }
 
-    pub fn render_triangle(&mut self) {
-        let Triangle { mut a, mut b, mut c } = *self.tri;
+    pub fn draw_bounding_box(&mut self, color: Color) {
+        self.buffer.set(0, 0, color);
+        self.buffer.set(0, self.buffer.height-1, color);
+        self.buffer.set(self.buffer.width-1, 0, color);
+        self.buffer.set(self.buffer.width-1, self.buffer.height-1, color);
+    }
+
+    pub fn render_mesh(&mut self) {
+        self.mesh.tris.iter().for_each(|tri| {
+            self.render_triangle(tri);
+        });
+    }
+
+    pub fn render_triangle(&mut self, tri: &'d Triangle) {
+        // triangle sent
+        let Triangle { mut a, mut b, mut c } = *tri;
+        // vertices in screen coordinates
         a -= *self.camera;
         b -= *self.camera;
         c -= *self.camera;
 
-        let mut a = self.view_to_screen(&a);
-        let mut b = self.view_to_screen(&b);
-        let mut c = self.view_to_screen(&c);
+        // vertices put into screen coordinates
+        let mut a: Vec2i = self.view_to_screen(&a);
+        let mut b: Vec2i = self.view_to_screen(&b);
+        let mut c: Vec2i = self.view_to_screen(&c);
 
+        // sort vertices with a bubble sort
         if c.y > b.y {
             (c, b) = (b, c);
         }
@@ -121,56 +130,38 @@ impl<'d> Renderer<'d> {
         }
         assert!(a.y >= b.y && b.y >= c.y);
 
-        let u = b - a;
-        let v = c - a;
+        // determines which sides to draw
+        let u: Vec2i = b - a;
+        let v: Vec2i = c - a;
 
         if u.det(&v) >= 0 {
-            self.draw_rhs_tri(&a, &b, &c);
+            self.scan_right_triangle(&a, &b, &c);
         }
         else {
-            self.draw_lhs_tri(&a, &b, &c);
+            self.scan_left_triangle(&a, &b, &c);
         }
 
-        self.fill_scan_convert(a.y, c.y, &a, &b, &c);
+        self.fill_scanbuffer_range(a.y, c.y, Color::cons(255, 10, 10));
+        self.draw_line(&a, &b, Color::cons(0, 255, 255));
+        self.draw_line(&a, &c, Color::cons(0, 255, 255));
+        self.draw_line(&c, &b, Color::cons(0, 255, 255));
     }
 
-    fn fill_scan_convert(&mut self, min: Int, max: Int, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
-        let color_a = Color::cons(255, 0, 0);
-        let color_b = Color::cons(0, 255, 0);
-        let color_c = Color::cons(0, 0, 255);
-        for y in max..min {
-            let y = y as usize;
-            let test = self.scanbuffer.scan[y];
-            for x in test.0..=test.1 {
-                if self.buffer.inbounds(x, y) {
-                    let total_area = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
-                    let alpha = ((b.y - c.y) * (x as Int - c.x) + (c.x - b.x) * (y as Int - c.y)) as Float / total_area as Float;
-                    let beta = ((c.y - a.y) * (x as Int - c.x) + (a.x - c.x) * (y as Int - c.y)) as Float / total_area as Float;
-                    let gamma = 1.0 - alpha - beta;
-
-                    if alpha >= 0. && beta >= 0. && gamma >= 0. {
-                        let color = self.interpolate_color(&color_a, &color_b, &color_c, alpha, beta, gamma);
-                        self.buffer.set(x, y, color, 1.);
-                    }
-                }
-            }
-        }
+    fn view_to_screen(&self, target: &Vec3) -> Vec2i {
+        let scaley: Float = SCREENSCALE;
+        let scalex: Float = SCREENSCALE * TERMHEIGHTWIDTH;
+        let scrx: Int = (target.y / target.x * scalex + self.buffer.get_half_width()) as Int;
+        let scry: Int = (-target.z / target.x * scaley + self.buffer.get_half_height()) as Int;
+        Vec2i::cons(scrx, scry)
     }
 
-    fn interpolate_color(&self, a: &Color, b: &Color, c: &Color, alpha: Float, beta: Float, gamma: Float) -> Color {
-        let red = (a.red as Float * alpha + b.red as Float * beta + c.red as Float * gamma) as u8;
-        let green = (a.green as Float * alpha + b.green as Float * beta + c.green as Float * gamma) as u8;
-        let blue = (a.blue as Float * alpha + b.blue as Float * beta + c.blue as Float * gamma) as u8;
-        Color::cons(red, green, blue)
-    }
-
-    fn draw_rhs_tri(&mut self, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
+    fn scan_right_triangle(&mut self, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
         self.scan_convert_high(a, c);
         self.scan_convert_low(a, b);
         self.scan_convert_low(b, c);
     }
 
-    fn draw_lhs_tri(&mut self, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
+    fn scan_left_triangle(&mut self, a: &Vec2i, b: &Vec2i, c: &Vec2i) {
         self.scan_convert_low(a, c);
         self.scan_convert_high(a, b);
         self.scan_convert_high(b, c);
@@ -189,7 +180,7 @@ impl<'d> Renderer<'d> {
         let mut error = dx + dy;
 
         loop {
-            if y0 < self.scanbuffer.height as Int {
+            if (y0 as usize) < self.scanbuffer.height {
                 self.scanbuffer.set_low(y0 as usize, x0 as usize);
             }
             let e2 = 2 * error;
@@ -219,7 +210,7 @@ impl<'d> Renderer<'d> {
         let mut error = dx + dy;
 
         loop {
-            if y0 < self.scanbuffer.height as Int {
+            if (y0 as usize) < self.scanbuffer.height {
                 self.scanbuffer.set_high(y0 as usize, x0 as usize);
             }
             let e2 = 2 * error;
@@ -236,7 +227,20 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn draw_line(&mut self, start: &Vec2i, end: &Vec2i) {
+    fn fill_scanbuffer_range(&mut self, min: Int, max: Int, color: Color) {
+        for y in max..min {
+            let y = y as usize;
+            if !(y < self.scanbuffer.height) { continue; }
+            for x in self.scanbuffer.scan[y].x..=self.scanbuffer.scan[y].y {
+                if self.buffer.inbounds(x, y) {
+                    self.buffer.set(x, y, color);
+                }
+            }
+        }
+    }
+
+    #[allow(dead_code)]
+    fn draw_line(&mut self, start: &Vec2i, end: &Vec2i, color: Color) {
         let mut x0 = start.x;
         let x1 = end.x;
         let mut y0 = start.y;
@@ -250,7 +254,7 @@ impl<'d> Renderer<'d> {
 
         loop {
             if self.buffer.inbounds(x0 as usize, y0 as usize) {
-                self.buffer.set(x0 as usize, y0 as usize, Color::cons(0, 255, 0), 1.);
+                self.buffer.set(x0 as usize, y0 as usize, color);
             }
             let e2 = 2 * error;
             if e2 >= dy {
@@ -264,14 +268,6 @@ impl<'d> Renderer<'d> {
                 y0 = y0 + sy;
             }
         }
-    }
-
-    fn view_to_screen(&self, target: &Vec3) -> Vec2i {
-        let scaley = SCREENSCALE;
-        let scalex = SCREENSCALE * TERMHEIGHTWIDTH;
-        let scrx = (target.y / target.x * scalex + self.buffer.get_half_width()) as Int;
-        let scry = (-target.z / target.x * scaley + self.buffer.get_half_height()) as Int;
-        Vec2i::cons(scrx, scry)
     }
 
     #[rustfmt::skip]
@@ -299,21 +295,40 @@ impl<'d> Renderer<'d> {
     }
 }
 
+#[allow(dead_code)]
+pub struct EdgeTracer {
+    start: Vec2i,
+    end: Vec2i,
+}
+
+#[allow(dead_code)]
+impl EdgeTracer {
+    pub fn cons(start: Vec2i, end: Vec2i) -> EdgeTracer {
+        EdgeTracer { start, end }
+    }
+}
+
 struct ScanBuffer {
     height: usize,
-    scan: Vec<(usize, usize)>,
+    scan: Vec<Vec2u>,
 }
 
 impl ScanBuffer {
     fn cons(height: usize) -> ScanBuffer {
-        ScanBuffer { height, scan: vec![(0, 0); height] }
+        ScanBuffer { height, scan: vec![Vec2u::cons(0, 0); height] }
     }
 
     fn set_low(&mut self, y: usize, value: usize) {
-        self.scan[y].0 = value;
+        {
+            debug_assert!(y < self.height);
+        }
+        self.scan[y].x = value;
     }
 
     fn set_high(&mut self, y: usize, value: usize) {
-        self.scan[y].1 = value;
+        {
+            debug_assert!(y < self.height);
+        }
+        self.scan[y].y = value;
     }
 }

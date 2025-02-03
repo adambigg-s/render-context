@@ -13,7 +13,9 @@ use std::{thread::sleep, time::Duration};
 
 use geometry::Triangle;
 use math::Vec3;
-use renderer::{Buffer, Color, Renderer};
+use renderer::{Buffer, Renderer, Color};
+
+use crate::geometry::Mesh;
 
 
 
@@ -28,25 +30,35 @@ const TERMHEIGHTWIDTH: Float = 2.05;
 
 
 fn main() {
-    let mut buffer = Buffer::cons(70, 250);
+    let mut buffer = Buffer::cons(55, 180);
     let mut fbuffer = String::with_capacity(buffer.width * buffer.height * 30);
-    let camera = Vec3::cons(-25, 0, 0);
+    let camera = Vec3::cons(-35, 0, 0);
 
-    let mut tri = Triangle::cons(Vec3::cons(0, 2, 5), Vec3::cons(0, -5, 0), Vec3::cons(0, 3, -4));
+    let tri1 = Triangle::cons(Vec3::cons(0, 0, 5), Vec3::cons(0, 0, -5), Vec3::cons(6, 8, 0));
+    let tri2 = Triangle::cons(Vec3::cons(0, 0, 5), Vec3::cons(0, 0, -5), Vec3::cons(-6, -8, 0));
+    let tri3 = Triangle::cons(Vec3::cons(0, 0, 5), Vec3::cons(0, 0, -5), Vec3::cons(-6, 8, 0));
+    let tri4 = Triangle::cons(Vec3::cons(0, 0, 5), Vec3::cons(0, 0, -5), Vec3::cons(6, -8, 0));
+
+    let mut mesh = Mesh::cons(vec![tri1], Vec3::cons(0, 0, 0));
+    mesh.tris.push(tri2);
+    mesh.tris.push(tri3);
+    mesh.tris.push(tri4);
 
     print!("\x1b[?25l");
     loop {
         buffer.clear();
 
-        // buffer.set(0, 0, Color::cons(0, 255, 255), 1.);
-        // buffer.set(buffer.width-1, buffer.height-1, Color::cons(0, 255, 255), 1.);
+        {
+            mesh.rotatex(0.01);
+            mesh.rotatey(0.02);
+            mesh.rotatez(0.04);
+        }
 
-        let mut renderer = Renderer::cons(&mut buffer, &mut fbuffer, &tri, &camera);
-        renderer.render_triangle();
+        let mut renderer = Renderer::cons(&mut buffer, &mut fbuffer, &mesh, &camera);
+        renderer.draw_bounding_box(Color::cons(255, 142, 172));
+        renderer.render_mesh();
         renderer.render_to_screen();
 
-        tri.rotatez(0.03);
-
-        sleep(Duration::from_millis(15));
+        sleep(Duration::from_millis(25));
     }
 }

@@ -35,8 +35,17 @@ impl Vec2i {
         Vec2i { x, y }
     }
 
+    pub fn fromvec2u(vec: Vec2u) -> Vec2i {
+        Vec2i::cons(vec.x as Int, vec.y as Int)
+    }
+
     pub fn det(&self, other: &Self) -> Int {
         self.x * other.y - self.y * other.x
+    }
+
+    pub fn clamp_positive(&mut self, height: Int, width: Int) {
+        self.x = self.x.max(0).min(width);
+        self.y = self.y.max(0).min(height);
     }
 }
 
@@ -135,6 +144,14 @@ impl Vec3 {
     pub fn normalize(&mut self) {
         let length = self.inner_prod(self).sqrt();
         self.x /= length; self.y /= length; self.z /= length;
+    }
+
+    pub fn cross(&self, other: &Self) -> Self {
+        Vec3::cons(
+            self.y * other.z - self.z * other.y,
+            self.x * other.z - self.z * other.x,
+            self.x * other.y - self.y * other.x
+        )
     }
 }
 

@@ -79,18 +79,31 @@ impl Vec2u {
 
 
 #[derive(Debug, Clone, Copy)]
-pub struct Vec3 {
+pub struct Vec3i {
+    pub x: Int, pub y: Int, pub z: Int,
+}
+
+impl Vec3i {
+    fn cons(x: Int, y: Int, z: Int) -> Vec3i {
+        Vec3i { x, y, z }
+    }
+}
+
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct Vec3f {
     pub x: Float, pub y: Float, pub z: Float,
 }
 
-impl Vec3 {
-    pub fn cons<T>(x: T, y: T, z: T) -> Vec3
+impl Vec3f {
+    pub fn cons<T>(x: T, y: T, z: T) -> Vec3f
     where T: Floatify {
-        Vec3 { x: x.floatify(), y: y.floatify(), z: z.floatify() }
+        Vec3f { x: x.floatify(), y: y.floatify(), z: z.floatify() }
     }
 
     pub fn rotatex(&mut self, a: Float) {
-        let Vec3 { x, y, z } = *self;
+        let Vec3f { x, y, z } = *self;
         let (sin, cos) = a.sin_cos();
         self.x = x;
         self.y = y * cos - z * sin;
@@ -98,7 +111,7 @@ impl Vec3 {
     }
 
     pub fn rotatey(&mut self, b: Float) {
-        let Vec3 { x, y, z } = *self;
+        let Vec3f { x, y, z } = *self;
         let (sin, cos) = b.sin_cos();
         self.x = x * cos + z * sin;
         self.y = y;
@@ -106,20 +119,20 @@ impl Vec3 {
     }
 
     pub fn rotatez(&mut self, c: Float) {
-        let Vec3 { x, y, z } = *self;
+        let Vec3f { x, y, z } = *self;
         let (sin, cos) = c.sin_cos();
         self.x = x * cos - y * sin;
         self.y = x * sin + y * cos;
         self.z = z;
     }
 
-    pub fn rotationmatxyz(&mut self, angles: Vec3) {
+    pub fn rotationmatxyz(&mut self, angles: Vec3f) {
         self.rotatex(angles.x);
         self.rotatey(angles.y);
         self.rotatez(angles.z);
     }
 
-    pub fn rotationmatzyx(&mut self, angles: Vec3) {
+    pub fn rotationmatzyx(&mut self, angles: Vec3f) {
         self.rotatez(angles.z);
         self.rotatey(angles.y);
         self.rotatex(angles.x);
@@ -137,7 +150,7 @@ impl Vec3 {
         self.z = -self.z;
     }
 
-    pub fn inner_prod(&self, other: &Vec3) -> Float {
+    pub fn inner_prod(&self, other: &Vec3f) -> Float {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
@@ -147,7 +160,7 @@ impl Vec3 {
     }
 
     pub fn cross(&self, other: &Self) -> Self {
-        Vec3::cons(
+        Vec3f::cons(
             self.y * other.z - self.z * other.y,
             self.x * other.z - self.z * other.x,
             self.x * other.y - self.y * other.x
@@ -157,14 +170,14 @@ impl Vec3 {
 
 
 
-impl Sub for Vec3 {
-    type Output = Vec3;
-    fn sub(self, other: Vec3) -> Self::Output {
-        Vec3::cons(self.x - other.x, self.y - other.y, self.z - other.z)
+impl Sub for Vec3f {
+    type Output = Vec3f;
+    fn sub(self, other: Vec3f) -> Self::Output {
+        Vec3f::cons(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 
-impl SubAssign for Vec3 {
+impl SubAssign for Vec3f {
     fn sub_assign(&mut self, other: Self) {
         self.x -= other.x; self.y -= other.y; self.z -= other.z;
     }
@@ -172,14 +185,14 @@ impl SubAssign for Vec3 {
 
 
 
-impl Add for Vec3 {
-    type Output = Vec3;
-    fn add(self, other: Vec3) -> Self::Output {
-        Vec3::cons(self.x + other.x, self.y + other.y, self.z + other.z)
+impl Add for Vec3f {
+    type Output = Vec3f;
+    fn add(self, other: Vec3f) -> Self::Output {
+        Vec3f::cons(self.x + other.x, self.y + other.y, self.z + other.z)
     }
 }
 
-impl AddAssign for Vec3 {
+impl AddAssign for Vec3f {
     fn add_assign(&mut self, other: Self) {
         self.x += other.x; self.y += other.y; self.z += other.z;
     }
@@ -187,14 +200,14 @@ impl AddAssign for Vec3 {
 
 
 
-impl Mul<Float> for Vec3 {
-    type Output = Vec3;
+impl Mul<Float> for Vec3f {
+    type Output = Vec3f;
     fn mul(self, rhs: Float) -> Self::Output {
-        Vec3::cons(self.x * rhs, self.y * rhs, self.z * rhs)
+        Vec3f::cons(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
 
-impl MulAssign<Float> for Vec3 {
+impl MulAssign<Float> for Vec3f {
     fn mul_assign(&mut self, rhs: Float) {
         self.x *= rhs; self.y *= rhs; self.z *= rhs;
     }
@@ -202,14 +215,14 @@ impl MulAssign<Float> for Vec3 {
 
 
 
-impl Div<Float> for Vec3 {
-    type Output = Vec3;
+impl Div<Float> for Vec3f {
+    type Output = Vec3f;
     fn div(self, rhs: Float) -> Self::Output {
-        Vec3::cons(self.x / rhs, self.y / rhs, self.z / rhs)
+        Vec3f::cons(self.x / rhs, self.y / rhs, self.z / rhs)
     }
 }
 
-impl DivAssign<Float> for Vec3 {
+impl DivAssign<Float> for Vec3f {
     fn div_assign(&mut self, other: Float) {
         self.x /= other; self.y /= other; self.z /= other;
     }

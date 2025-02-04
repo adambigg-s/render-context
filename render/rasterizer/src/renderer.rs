@@ -2,50 +2,12 @@
 
 
 
-use crate::{Color, Float, Int, SCREENSCALE, TERMHEIGHTWIDTH};
-use crate::math::{Vec2i, Vec2u, Vec3};
-use crate::geometry::{Mesh, RefFrame, Triangle};
+use crate::render_utils::{Buffer, Camera, Color};
+use crate::{Float, Int, SCREENSCALE, TERMHEIGHTWIDTH};
+use crate::math::{Vec2i, Vec2u, Vec3f};
+use crate::geometry::{Mesh, RefFrame, Trif};
 
 
-
-pub struct Buffer {
-    pub height: usize, pub width: usize,
-    pub pixels: Vec<Color>,
-}
-
-impl Buffer {
-    pub fn cons(height: usize, width: usize) -> Buffer {
-        Buffer { height, width, pixels: vec![0; width * height] }
-    }
-
-    pub fn set(&mut self, x: usize, y: usize, color: Color) {
-        {
-            debug_assert!(self.inbounds(x, y));
-        }
-        let idx = self.idx(x, y);
-        self.pixels[idx] = color;
-    }
-
-    pub fn get_half_height(&self) -> Float {
-        (self.height / 2) as Float
-    }
-
-    pub fn get_half_width(&self) -> Float {
-        (self.width / 2) as Float
-    }
-
-    pub fn clear(&mut self) {
-        self.pixels.fill(0);
-    }
-
-    fn idx(&self, x: usize, y: usize) -> usize {
-        (self.height-1 - y) * self.width + x
-    }
-
-    fn inbounds(&self, x: usize, y: usize) -> bool {
-        x < self.width && y < self.height
-    }
-}
 
 pub struct Renderer<'d> {
     buffer: &'d mut Buffer,
@@ -65,11 +27,6 @@ impl<'d> Renderer<'d> {
         self.buffer.set(self.buffer.width-1, self.buffer.height-1, color);
     }
 
-    #[allow(dead_code)]
-    pub fn cull(&self, a: &Vec3, b: &Vec3, c: &Vec3) -> bool {
-        (*a - *b).cross(&(*a - *c)).inner_prod(&Vec3::cons(1, 0, 0)) >= 0.
-    }
-
     pub fn render_mesh(&mut self, color: Color) {
         self.mesh.tris.iter().for_each(|tri| {
             self.render_triangle(tri, self.mesh.rotation, color);
@@ -84,21 +41,21 @@ impl<'d> Renderer<'d> {
 
     pub fn render_frame(&mut self, frame: &RefFrame) {
         let position = frame.center - self.camera.position;
-        let xarm = position + Vec3::cons(frame.length, 0., 0.);
-        let yarm = position + Vec3::cons(0., frame.length, 0.);
-        let zarm = position + Vec3::cons(0., 0., frame.length);
+        let xarm = position + Vec3f::cons(frame.length, 0., 0.);
+        let yarm = position + Vec3f::cons(0., frame.length, 0.);
+        let zarm = position + Vec3f::cons(0., 0., frame.length);
         if position.x <= 0. { return; }
-        self.draw_line(self.view_to_screen(&position), self.view_to_screen(&xarm), 0xffff0000);
-        self.draw_line(self.view_to_screen(&position), self.view_to_screen(&yarm), 0xff00ff00);
-        self.draw_line(self.view_to_screen(&position), self.view_to_screen(&zarm), 0xff0000ff);
+        self.draw_line(self.view_to_screen(&position), self.view_to_screen(&xarm), Color::cons(255, 0, 0));
+        self.draw_line(self.view_to_screen(&position), self.view_to_screen(&yarm), Color::cons(0, 255, 0));
+        self.draw_line(self.view_to_screen(&position), self.view_to_screen(&zarm), Color::cons(0, 0, 255));
         
     }
 
     pub fn render_screen_frame(&mut self) {
         let position = Vec2i::cons(10, 10);
-        self.draw_line(position, position + Vec2i::cons(10, 0), 0xffff0000);
-        self.draw_line(position, position + Vec2i::cons(0, 10), 0xff00ff00);
-        self.buffer.set(position.x as usize, position.y as usize, 0xff0000ff);
+        self.draw_line(position, position + Vec2i::cons(10, 0), Color::cons(255, 0, 0));
+        self.draw_line(position, position + Vec2i::cons(0, 10), Color::cons(0, 255, 0));
+        self.buffer.set(position.x as usize, position.y as usize, Color::cons(0, 0, 255));
     }
 
     pub fn draw_line(&mut self, start: Vec2i, end: Vec2i, color: Color) {
@@ -109,46 +66,57 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    pub fn render_wireframe(&mut self, tri: &Triangle, rotation: Vec3, color: Color) {
-        let (a, b, c) = self.prep_triangle(tri, rotation);
-        self.draw_line(a, b, color);
-        self.draw_line(a, c, color);
-        self.draw_line(c, b, color);
-    }
-
-    pub fn render_triangle(&mut self, tri: &Triangle, rotation: Vec3, color: Color) {
-        let (a, b, c) = self.prep_triangle(tri, rotation);
-
-        if (a - b).det(&(a - c)) <= 0 {
-            let mut longest = EdgeTracer::cons(a, c);
-            let mut middle = EdgeTracer::cons(a, b);
-            while let (Some(p1), Some(p2)) = (longest.step_constant(), middle.step_constant()) {
-                self.fill_edge_trace(&p1, &p2, color);
-            }
-            let mut longest = EdgeTracer::cons(c, a);
-            let mut middle = EdgeTracer::cons(c, b);
-            while let (Some(p1), Some(p2)) = (longest.step_constant(), middle.step_constant()) {
-                self.fill_edge_trace(&p1, &p2, color);
-            }
-        }
-        else {
-            let mut longest = EdgeTracer::cons(a, c);
-            let mut middle = EdgeTracer::cons(a, b);
-            while let (Some(p1), Some(p2)) = (middle.step_constant(), longest.step_constant()) {
-                self.fill_edge_trace(&p1, &p2, color);
-            }
-            let mut longest = EdgeTracer::cons(c, a);
-            let mut middle = EdgeTracer::cons(c, b);
-            while let (Some(p1), Some(p2)) = (middle.step_constant(), longest.step_constant()) {
-                self.fill_edge_trace(&p1, &p2, color);
-            }
+    pub fn render_wireframe(&mut self, tri: &Trif, rotation: Vec3f, color: Color) {
+        if let Some((a, b, c, lighting)) = self.prep_triangle(tri, rotation) {
+            let color = color.attenuate(lighting);
+            self.draw_line(a, b, color);
+            self.draw_line(a, c, color);
+            self.draw_line(c, b, color);
         }
     }
 
-    fn prep_triangle(&mut self, tri: &Triangle, rotation: Vec3) -> (Vec2i, Vec2i, Vec2i) {
+    pub fn render_triangle(&mut self, tri: &Trif, rotation: Vec3f, color: Color) {
+        if let Some((a, b, c, lighting)) = self.prep_triangle(tri, rotation) {
+            let color = color.attenuate(lighting);
+            if (a - b).det(&(a - c)) <= 0 {
+                let mut longest = EdgeTracer::cons(a, c);
+                let mut middle = EdgeTracer::cons(a, b);
+                while let (Some(p1), Some(p2)) = (longest.step_constant(), middle.step_constant()) {
+                    self.fill_edge_trace(&p1, &p2, color);
+                }
+                let mut longest = EdgeTracer::cons(c, a);
+                let mut middle = EdgeTracer::cons(c, b);
+                while let (Some(p1), Some(p2)) = (longest.step_constant(), middle.step_constant()) {
+                    self.fill_edge_trace(&p1, &p2, color);
+                }
+            }
+            else {
+                let mut longest = EdgeTracer::cons(a, c);
+                let mut middle = EdgeTracer::cons(a, b);
+                while let (Some(p1), Some(p2)) = (middle.step_constant(), longest.step_constant()) {
+                    self.fill_edge_trace(&p1, &p2, color);
+                }
+                let mut longest = EdgeTracer::cons(c, a);
+                let mut middle = EdgeTracer::cons(c, b);
+                while let (Some(p1), Some(p2)) = (middle.step_constant(), longest.step_constant()) {
+                    self.fill_edge_trace(&p1, &p2, color);
+                }
+            }
+        }
+    }
+
+    fn prep_triangle(&mut self, tri: &Trif, rotation: Vec3f) -> Option<(Vec2i, Vec2i, Vec2i, Float)> {
         let mut triangle = *tri;
         triangle.rotatezyx(rotation);
-        let Triangle { mut a, mut b, mut c, .. } = triangle;
+        let mut cross = (triangle.a.pos - triangle.b.pos).cross(&(triangle.a.pos - triangle.c.pos));
+        if cross.x >= 0. {
+            return None;
+        }
+        let mut lighting = Vec3f::cons(-6, 0, -2);
+        lighting.normalize();
+        cross.normalize();
+        let lighting_re = cross.inner_prod(&lighting);
+        let Trif { mut a, mut b, mut c, .. } = triangle;
         a.pos -= self.camera.position;
         b.pos -= self.camera.position;
         c.pos -= self.camera.position;
@@ -172,7 +140,7 @@ impl<'d> Renderer<'d> {
         {
             debug_assert!(a.y >= b.y && b.y >= c.y);
         }
-        (a, b, c)
+        Some((a, b, c, lighting_re))
     }
 
     pub fn fill_edge_trace(&mut self, starting: &Vec2i, ending: &Vec2i, color: Color) {
@@ -186,7 +154,7 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn view_to_screen(&self, target: &Vec3) -> Vec2i {
+    fn view_to_screen(&self, target: &Vec3f) -> Vec2i {
         let scaley: Float = SCREENSCALE;
         let scalex: Float = SCREENSCALE * TERMHEIGHTWIDTH;
         let scrx: usize = (target.y / target.x * scalex + self.buffer.get_half_width()).floor() as usize;
@@ -246,17 +214,5 @@ impl EdgeTracer {
             self.current.y += self.step.y
         }
         Some(self.current)
-    }
-}
-
-#[allow(dead_code)]
-pub struct Camera {
-    position: Vec3,
-    rotation: Vec3,
-}
-
-impl Camera {
-    pub fn cons(position: Vec3) -> Camera {
-        Camera { position, rotation: Vec3::cons(0, 0, 0) }
     }
 }

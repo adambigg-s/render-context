@@ -39,7 +39,7 @@ impl Buffer {
     pub fn cons(height: usize, width: usize) -> Buffer {
         Buffer {
             height, width,
-            pixels: vec![0; width * height], depth: vec![1E9; width * height]
+            pixels: vec![0; width * height], depth: vec![1e+9; width * height]
         }
     }
 
@@ -65,7 +65,7 @@ impl Buffer {
 
     pub fn clear(&mut self) {
         self.pixels.fill(BACKGROUND);
-        self.depth.fill(1e9);
+        self.depth.fill(1e+9);
     }
 
     pub fn inbounds(&self, x: usize, y: usize) -> bool {

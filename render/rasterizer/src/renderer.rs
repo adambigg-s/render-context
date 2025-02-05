@@ -3,7 +3,7 @@
 
 
 use crate::render_utils::{Buffer, Camera, Color};
-use crate::{Float, Int, SCREENSCALE, TERMHEIGHTWIDTH};
+use crate::{Float, Int};
 use crate::math::{Vec2i, Vec2u, Vec3f};
 use crate::geometry::{Mesh, RefFrame, Trif};
 
@@ -13,11 +13,16 @@ pub struct Renderer<'d> {
     buffer: &'d mut Buffer,
     mesh: &'d Mesh,
     camera: &'d Camera,
+    lighting_vec: Vec3f,
+    scale: Float,
 }
 
 impl<'d> Renderer<'d> {
-    pub fn cons(buffer: &'d mut Buffer, mesh: &'d Mesh, camera: &'d Camera) -> Renderer<'d> {
-        Renderer { buffer, mesh, camera }
+    pub fn cons(buffer: &'d mut Buffer, mesh: &'d Mesh, camera: &'d Camera, fov: Float) -> Renderer<'d> {
+        let mut lighting_vec = Vec3f::cons(-6, 2, -2);
+        lighting_vec.normalize();
+        let scale = buffer.get_half_width() / (fov / 2.).tan();
+        Renderer { buffer, mesh, camera, lighting_vec, scale }
     }
 
     pub fn draw_bounding_box(&mut self, color: Color) {
@@ -39,7 +44,7 @@ impl<'d> Renderer<'d> {
         })
     }
 
-    pub fn render_frame(&mut self, frame: &RefFrame) {
+    pub fn render_world_coord_frame(&mut self, frame: &RefFrame) {
         let position = frame.center - self.camera.position;
         let xarm = position + Vec3f::cons(frame.length, 0., 0.);
         let yarm = position + Vec3f::cons(0., frame.length, 0.);
@@ -51,7 +56,7 @@ impl<'d> Renderer<'d> {
         
     }
 
-    pub fn render_screen_frame(&mut self) {
+    pub fn render_screen_coord_frame(&mut self) {
         let position = Vec2i::cons(10, 10);
         self.draw_line(position, position + Vec2i::cons(10, 0), Color::cons(255, 0, 0));
         self.draw_line(position, position + Vec2i::cons(0, 10), Color::cons(0, 255, 0));
@@ -60,7 +65,7 @@ impl<'d> Renderer<'d> {
 
     pub fn draw_line(&mut self, start: Vec2i, end: Vec2i, color: Color) {
         let mut edge = EdgeTracer::cons(start, end);
-        while let Some(point) = edge.step_general() {
+        while let Some(point) = edge.step_once() {
             if !self.buffer.inbounds(point.x as usize, point.y as usize) { continue; }
             self.buffer.set(point.x as usize, point.y as usize, color);
         }
@@ -112,10 +117,8 @@ impl<'d> Renderer<'d> {
         if cross.x >= 0. {
             return None;
         }
-        let mut lighting = Vec3f::cons(-6, 0, -2);
-        lighting.normalize();
         cross.normalize();
-        let lighting_re = cross.inner_prod(&lighting);
+        let lighting_re = cross.inner_prod(&self.lighting_vec);
         let Trif { mut a, mut b, mut c, .. } = triangle;
         a.pos -= self.camera.position;
         b.pos -= self.camera.position;
@@ -155,10 +158,8 @@ impl<'d> Renderer<'d> {
     }
 
     fn view_to_screen(&self, target: &Vec3f) -> Vec2i {
-        let scaley: Float = SCREENSCALE;
-        let scalex: Float = SCREENSCALE * TERMHEIGHTWIDTH;
-        let scrx: usize = (target.y / target.x * scalex + self.buffer.get_half_width()).floor() as usize;
-        let scry: usize = (-target.z / target.x * scaley + self.buffer.get_half_height()).floor() as usize;
+        let scrx: usize = (target.y / target.x * self.scale + self.buffer.get_half_width()).floor() as usize;
+        let scry: usize = (-target.z / target.x * self.scale + self.buffer.get_half_height()).floor() as usize;
         let screen = Vec2u::cons(scrx, scry);
         Vec2i::fromvec2u(screen)
     }
@@ -183,35 +184,26 @@ impl EdgeTracer {
         EdgeTracer { current: start, end, step: Vec2i::cons(sx, sy), deltas: Vec2i::cons(dx, dy), error }
     }
 
-    pub fn step_constant(&mut self) -> Option<Vec2i> {
-        let startingy = self.current.y;
-        while self.current.y == startingy {
-            let e2: i32 = 2 * self.error;
-            if e2 >= self.deltas.y {
-                if self.current.x == self.end.x { return None; }
-                self.error += self.deltas.y;
-                self.current.x += self.step.x;
-            }
-            if e2 <= self.deltas.x {
-                if self.current.y == self.end.y { return None; }
-                self.error += self.deltas.x;
-                self.current.y += self.step.y
-            }
-        }
-        Some(self.current)
-    }
-
-    pub fn step_general(&mut self) -> Option<Vec2i> {
+    pub fn step_once(&mut self) -> Option<Vec2i> {
         let e2: i32 = 2 * self.error;
+        if self.current.x == self.end.x && self.current.y == self.end.y { return None; }
         if e2 >= self.deltas.y {
-            if self.current.x == self.end.x { return None; }
+            // if self.current.x == self.end.x { return None; }
             self.error += self.deltas.y;
             self.current.x += self.step.x;
         }
         if e2 <= self.deltas.x {
-            if self.current.y == self.end.y { return None; }
+            // if self.current.y == self.end.y { return None; }
             self.error += self.deltas.x;
             self.current.y += self.step.y
+        }
+        Some(self.current)
+    }
+
+    pub fn step_constant(&mut self) -> Option<Vec2i> {
+        let startingy = self.current.y;
+        while self.current.y == startingy {
+            self.step_once()?;
         }
         Some(self.current)
     }

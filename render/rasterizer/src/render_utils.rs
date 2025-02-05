@@ -19,14 +19,6 @@ impl Color {
     pub fn to_u32(self) -> u32 {
         ((self.red as u32) << 16) | ((self.green as u32) << 8) | (self.blue as u32)
     }
-
-    pub fn attenuate(&self, lighting: Float) -> Self {
-        let lighting = lighting.max(0.15);
-        let red = (self.red as Float * lighting) as u8;
-        let green = (self.green as Float * lighting) as u8;
-        let blue = (self.blue as Float * lighting) as u8;
-        Self::cons(red, green, blue)
-    }
 }
 
 pub struct Buffer {

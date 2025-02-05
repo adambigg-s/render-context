@@ -5,50 +5,45 @@
 
 use std::fs::read_to_string;
 
-use crate::math::{Vec3f, Vec3i};
+use crate::math::Vec3f;
 use crate::{Color, Float};
 
 
 
 #[derive(Clone, Copy)]
-pub struct Vertexf {
+pub struct Vertf {
     pub pos: Vec3f,
     pub color: Color,
 }
 
-impl Vertexf {
-    fn cons(pos: Vec3f, color: Color) -> Vertexf {
-        Vertexf { pos, color }
+impl Vertf {
+    pub fn cons(pos: Vec3f, color: Color) -> Vertf {
+        Vertf { pos, color }
     }
-}
-
-pub struct Vertexi {
-    pub pos: Vec3i,
-    pub color: Color,
-}
-
-impl Vertexi {
-    fn cons(pos: Vec3i, color: Color) -> Vertexi {
-        Vertexi { pos, color }
-    }
-}
-
-pub struct Trii {
-    pub a: Vertexi, pub b: Vertexi, pub c: Vertexi,
 }
 
 #[derive(Clone, Copy)]
 pub struct Trif {
-    pub a: Vertexf, pub b: Vertexf, pub c: Vertexf,
+    pub a: Vertf, pub b: Vertf, pub c: Vertf,
 }
 
 impl Trif {
     pub fn cons(a: Vec3f, b: Vec3f, c: Vec3f) -> Trif {
         Trif {
-            a: Vertexf::cons(a, Color::cons(255, 0, 0)),
-            b: Vertexf::cons(b, Color::cons(0, 255, 0)),
-            c: Vertexf::cons(c, Color::cons(0, 0, 255))
+            a: Vertf::cons(a, Color::cons(255, 0, 0)),
+            b: Vertf::cons(b, Color::cons(0, 255, 0)),
+            c: Vertf::cons(c, Color::cons(0, 0, 255)),
         }
+    }
+
+    pub fn cons_verts(a: Vertf, b: Vertf, c: Vertf) -> Trif {
+        Trif { a, b, c }
+    }
+
+    pub fn get_normal(&self) -> Vec3f {
+        let mut normal = (self.a.pos - self.b.pos).cross(&(self.a.pos - self.c.pos));
+        normal.normalize();
+        normal
     }
 
     pub fn rotatex(&mut self, angle: Float) {
@@ -73,6 +68,12 @@ impl Trif {
         self.rotatez(angles.z);
         self.rotatey(angles.y);
         self.rotatex(angles.x);
+    }
+
+    pub fn long_left(&self) -> bool {
+        let v1 = self.a.pos - self.b.pos;
+        let v2 = self.a.pos - self.c.pos;
+        v1.x * v2.y - v1.y * v2.x <= 0.
     }
 }
 

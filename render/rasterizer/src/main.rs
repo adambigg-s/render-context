@@ -48,7 +48,7 @@ fn main() {
         buffer.height,
         WindowOptions { scale: Scale::X2, ..Default::default() }
     ).unwrap();
-    window.set_target_fps(90);
+    window.set_target_fps(120);
 
     while !window.is_key_down(Key::Escape) && !window.is_key_down(Key::C) {
         let framestart = Instant::now();
@@ -73,21 +73,17 @@ fn main() {
             if window.is_key_down(Key::E) {
                 mesh.rotatez(-0.02);
             }
-            mesh.rotatex(0.004);
-            mesh.rotatey(0.003);
-            mesh.rotatez(0.005)
+            mesh.rotatex(0.04);
+            mesh.rotatey(0.03);
+            mesh.rotatez(0.05)
         }
 
         let mut renderer = Renderer::cons(&mut buffer, &mesh, &camera, FOV);
-        renderer.draw_bounding_box(Color::cons(255, 141, 161));
-        renderer.render_mesh(Color::cons(50, 255, 255));
-        renderer.render_mesh_frame(Color::cons(200, 200, 200));
-        renderer.render_world_coord_frame(&frame);
-        renderer.render_screen_coord_frame();
+        renderer.render_mesh();
 
         window.update_with_buffer(buffer.get_pixels(), buffer.width, buffer.height).unwrap();
         
-        print!("\x1b[15Hframe time: {ftime: >3} ms", ftime = framestart.elapsed().as_millis());
+        print!("\x1b[7Hframe time: {ftime: >3} ms", ftime = framestart.elapsed().as_millis());
     }
     print!("\x1b[0m");
 }

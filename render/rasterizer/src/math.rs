@@ -20,7 +20,13 @@ impl Floatify for Int {
 }
 
 impl Floatify for Float {
-    fn floatify(self) -> Float {self}
+    fn floatify(self) -> Float { self }
+}
+
+impl Floatify for u8 {
+    fn floatify(self) -> Float {
+        self as Float
+    }
 }
 
 

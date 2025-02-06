@@ -73,7 +73,7 @@ impl<'d> Renderer<'d> {
 
         let norm = triangle.get_normal();
         let lighting = self.lighting_vec.inner_prod(&norm).max(0.05);
-        if norm.x > 0. {
+        if norm.x > 0.25 {
             return None;
         }
         
@@ -103,15 +103,17 @@ impl<'d> Renderer<'d> {
             debug_assert!(starting.y == ending.y);
         }
         let y = starting.y;
-        for x in starting.x..ending.x {
+        for x in starting.x..=ending.x {
             if !self.buffer.inbounds(x as usize, y as usize) { return; }
             let barycentric = Barycentric::cons(triangle);
             let barys = barycentric.weights(x, y);
             
-            let red = triangle.get_color_red().inner_prod(&barys);
-            let green = triangle.get_color_green().inner_prod(&barys);
-            let blue = triangle.get_color_blue().inner_prod(&barys);
-            let mut color = Color::cons(red as u8, green as u8, blue as u8);
+            let mut color = Color::cons(0, 255, 255);
+            let xtex = triangle.interpolate_x(barys);
+            let ytex = triangle.interpolate_y(barys);
+            if let Some(texture) = &self.mesh.texture {
+                color = texture.get_at(xtex, ytex);
+            }
             color.attenuate(lighting);
             
             let depth = triangle.interpolate_depth_inverse(barys);
@@ -129,7 +131,7 @@ impl<'d> Renderer<'d> {
     fn view_to_screen(&self, target: &Vert) -> Vert {
         let scrx  = target.pos.y / target.pos.x * self.scale + self.buffer.get_half_width();
         let scry = -target.pos.z / target.pos.x * self.scale + self.buffer.get_half_height();
-        Vert::cons(Vec3f::cons(scrx, scry, target.pos.x), target.color)
+        Vert::cons(Vec3f::cons(scrx, scry, target.pos.x), target.color, target.texpos)
     }
 }
 

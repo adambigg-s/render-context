@@ -111,6 +111,21 @@ impl Sub for Vec3i {
 
 
 #[derive(Debug, Clone, Copy)]
+pub struct Vec2f {
+    pub x: Float, pub y: Float,
+}
+
+impl Vec2f {
+    pub fn cons<T>(x: T, y: T) -> Vec2f
+    where T: Floatify {
+        Vec2f { x: x.floatify(), y: y.floatify() }
+    }
+}
+
+
+
+
+#[derive(Debug, Clone, Copy)]
 pub struct Vec3f {
     pub x: Float, pub y: Float, pub z: Float,
 }

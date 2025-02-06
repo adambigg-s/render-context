@@ -31,8 +31,8 @@ const FOV: Float = 90.;
 const FPS: usize = 120;
 const BACKGROUND: u32 = 0xffbbbbbb;
 const RESMOD: usize = 2;
-const HEIGHT: usize = 1080 / RESMOD;
-const WIDTH: usize  = 1920 / RESMOD;
+const HEIGHT: usize = 1440 / RESMOD;
+const WIDTH: usize  = 2560 / RESMOD;
 
 
 
@@ -42,20 +42,22 @@ fn main() {
         std::env::set_var("RUST_BACKTRACE", "full");
     }
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let mut window = make_window(&buffer, FPS, Scale::X2);
+    let mut window = make_window(&buffer, FPS, Scale::X1);
     let frame = RefFrame::cons(Vec3f::cons(-20, -80, 20), 10.);
     let camera = Camera::cons(Vec3f::cons(-100, 0, 0));
 
     let tri1 = Tri::cons(Vec3f::cons(0, -50, 20), Vec3f::cons(0, 50, 20), Vec3f::cons(0, 0, -50));
     let tri2 = Tri::cons(Vec3f::cons(0, 50, 20), Vec3f::cons(0, 50, -20), Vec3f::cons(0, 0, -50));
-    let mut mesh = Mesh::cons(vec![tri1], Vec3f::cons(0, -50, 0));
+    let mut mesh = Mesh::cons(vec![tri1], Vec3f::cons(0, -50, 0), None);
     mesh.tris.push(tri2);
     // let mut mesh = Mesh::build_from_file("icosahedron.vert", 55.);
     // let mut mesh = Mesh::build_from_file_extended("tree.obj", 3.);
-    // let mut mesh = Mesh::build_from_file_extended("portal.obj", 55.);
-    // let mut mesh = Mesh::build_from_file_extended("plant/plant.obj", 1.);
-    // let mut mesh = Mesh::build_from_file_extended("penguin/penguin.obj", 150.);
-    mesh.center = Vec3f::cons(0, 0, 0);
+    let mut mesh = Mesh::build_from_file_extended("portal.obj", 55., Some("portal_tex.jpg"));
+    // let mut mesh = Mesh::build_from_file_extended("ak47/ak47.obj", 1., Some("ak47/ak47.png"));
+    // let mut mesh = Mesh::build_from_file_extended("plant/plant.obj", 1., Some("portal_tex.jpg"));
+    let mut mesh = Mesh::build_from_file_extended("penguin/penguin.obj", 150., Some("penguin/penguin.tif"));
+    let mut mesh = Mesh::build_from_file_extended("emperor/emperor.obj", 1., Some("emperor/emperor.jpg"));
+    mesh.center = Vec3f::cons(0, 0, 60);
 
     while !window.is_key_down(Key::Escape) && !window.is_key_down(Key::C) {
         let framestart = Instant::now();
@@ -86,13 +88,15 @@ fn main() {
             if window.is_key_down(Key::E) {
                 mesh.rotatez(-0.02);
             }
-            // mesh.rotatex(0.03);
-            // mesh.rotatey(0.01);
-            // mesh.rotatez(0.03);
+            // mesh.rotatex(0.003);
+            // mesh.rotatey(0.001);
+            // mesh.rotatez(0.008);
         }
 
         window.update_with_buffer(buffer.get_pixels(), buffer.width, buffer.height).unwrap();
         print!("\x1b[7Hframe time: {ftime: >3} ms", ftime = framestart.elapsed().as_millis());
     }
+    let texture = mesh.texture.unwrap();
+    println!("{}", texture.height * texture.width);
     print!("\x1b[0m");
 }

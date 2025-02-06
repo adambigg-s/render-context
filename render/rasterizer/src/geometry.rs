@@ -7,19 +7,20 @@ use std::fs::read_to_string;
 
 use crate::texture::Texture;
 use crate::{Color, Float, Int};
-use crate::math::Vec3f;
+use crate::math::{Vec2f, Vec3f};
 
 
 
 #[derive(Clone, Copy)]
 pub struct Vert {
     pub pos: Vec3f,
+    pub texpos: Vec2f,
     pub color: Color,
 }
 
 impl Vert {
-    pub fn cons(pos: Vec3f, color: Color) -> Vert {
-        Vert { pos, color }
+    pub fn cons(pos: Vec3f, color: Color, texpos: Vec2f) -> Vert {
+        Vert { pos, color, texpos }
     }
 }
 
@@ -33,9 +34,9 @@ pub struct Tri {
 impl Tri {
     pub fn cons(a: Vec3f, b: Vec3f, c: Vec3f) -> Tri {
         Tri {
-            a: Vert::cons(a, Color::cons(255, 0, 0)),
-            b: Vert::cons(b, Color::cons(0, 255, 0)),
-            c: Vert::cons(c, Color::cons(0, 0, 255)),
+            a: Vert::cons(a, Color::cons(255, 0, 0), Vec2f::cons(0, 0)),
+            b: Vert::cons(b, Color::cons(0, 255, 0), Vec2f::cons(0, 0)),
+            c: Vert::cons(c, Color::cons(0, 0, 255), Vec2f::cons(0, 0)),
         }
     }
 
@@ -70,6 +71,17 @@ impl Tri {
         let depths = Vec3f::cons(1. / self.a.pos.z, 1. / self.b.pos.z, 1. / self.c.pos.z);
         1. / depths.inner_prod(&weights)
     }
+    
+    pub fn interpolate_x(&self, weights: Vec3f) -> Float {
+        let depths = Vec3f::cons(self.a.texpos.x, self.b.texpos.x, self.c.texpos.x);
+        depths.inner_prod(&weights)
+    }
+
+    pub fn interpolate_y(&self, weights: Vec3f) -> Float {
+        let depths = Vec3f::cons(self.a.texpos.y, self.b.texpos.y, self.c.texpos.y);
+        depths.inner_prod(&weights)
+    }
+
 
     pub fn rotatex(&mut self, angle: Float) {
         self.a.pos.rotatex(angle);
@@ -118,8 +130,9 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn cons(tris: Vec<Tri>, center: Vec3f) -> Mesh {
-        Mesh { tris, center, rotation: Vec3f::cons(0, 0, 0), texture: None }
+    pub fn cons(tris: Vec<Tri>, center: Vec3f, texpath: Option<&str>) -> Mesh {
+        let texture = texpath.map(Texture::build_from_file);
+        Mesh { tris, center, rotation: Vec3f::cons(0, 0, 0), texture }
     }
 
     pub fn build_from_file(path: &str, scaling: Float) -> Mesh {
@@ -149,13 +162,14 @@ impl Mesh {
             }
         }
 
-        Mesh::cons(tris, Vec3f::cons(0, 0, 0))
+        Mesh::cons(tris, Vec3f::cons(0, 0, 0), None)
     }
 
-    pub fn build_from_file_extended(path: &str, scaling: Float) -> Mesh {
+    pub fn build_from_file_extended(path: &str, scaling: Float, texpath: Option<&str>) -> Mesh {
         let data = read_to_string(path).unwrap();
         let mut vertices = Vec::new();
         let mut tris = Vec::new();
+        let mut tex_coords = Vec::new();
 
         for line in data.lines() {
             let parts: Vec<&str> = line.split_whitespace().collect();
@@ -168,6 +182,69 @@ impl Mesh {
                     let z: Float = parts[3].parse::<Float>().unwrap() * scaling;
                     vertices.push(Vec3f::cons(x, y, z));
                 }
+                "vt" => {
+                    let u: Float = parts[1].parse().unwrap();
+                    let v: Float = parts[2].parse().unwrap();
+                    let v: Float = 1.0 - parts[2].parse::<Float>().unwrap();
+                    tex_coords.push(Vec2f::cons(u, v));
+                }
+                "f" => {
+                    let mut face_vertices = Vec::new();
+                    for part in parts.iter().skip(1) {
+                        let indices: Vec<&str> = part.split('/').collect();
+                        let vert_idx = indices[0].parse::<usize>().unwrap() - 1;
+                        let vert = vertices[vert_idx];
+
+                        let tex_coord = if indices.len() > 1 && !indices[1].is_empty() {
+                            let tex_idx = indices[1].parse::<usize>().unwrap() - 1;
+                            tex_coords[tex_idx]
+                        } else {
+                            Vec2f::cons(0, 0,)
+                        };
+
+                        face_vertices.push((vert, tex_coord));
+                    }
+                    for i in 2..face_vertices.len() {
+                        let (v0, t0) = face_vertices[0];
+                        let (v1, t1) = face_vertices[i - 1];
+                        let (v2, t2) = face_vertices[i];
+
+                        let v0 = Vert::cons(v0, Color::cons(255, 255, 255), t0);
+                        let v1 = Vert::cons(v1, Color::cons(255, 255, 255), t1);
+                        let v2 = Vert::cons(v2, Color::cons(255, 255, 255), t2);
+
+                        tris.push(Tri::cons_verts(v0, v1, v2));
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        Mesh::cons(tris, Vec3f::cons(0, 0, 0), texpath)
+    }
+
+    pub fn build_from_file_extended_dep(path: &str, scaling: Float, texpath: Option<&str>) -> Mesh {
+        let data = read_to_string(path).unwrap();
+        let mut vertices = Vec::new();
+        let mut tris = Vec::new();
+        let mut tex_coords = Vec::new();
+
+        for line in data.lines() {
+            let parts: Vec<&str> = line.split_whitespace().collect();
+            if parts.is_empty() { continue };
+
+            match parts[0] {
+                "v" => {
+                    let x: Float = parts[1].parse::<Float>().unwrap() * scaling;
+                    let y: Float = parts[2].parse::<Float>().unwrap() * scaling;
+                    let z: Float = parts[3].parse::<Float>().unwrap() * scaling;
+                    vertices.push(Vec3f::cons(x, y, z));
+                }
+                "vt" => {
+                    let u: Float = parts[1].parse().unwrap();
+                    let v: Float = parts[2].parse().unwrap();
+                    tex_coords.push(Vec2f::cons(u, v));
+                }
                 "f" => {
                     let mut face_vertices = Vec::new();
                     for part in parts.iter().skip(1) {
@@ -177,14 +254,21 @@ impl Mesh {
                         }
                     }
                     for i in 2..face_vertices.len() {
-                        tris.push(Tri::cons(face_vertices[0], face_vertices[i-1], face_vertices[i]));
+                        let tri_vertices = (face_vertices[0], face_vertices[i - 1], face_vertices[i]);
+                        let tex_coords = (tex_coords[0], tex_coords[i - 1], tex_coords[i]);
+
+                        let v1 = Vert::cons(tri_vertices.0, Color::cons(255, 255, 255), tex_coords.0);
+                        let v2 = Vert::cons(tri_vertices.1, Color::cons(255, 255, 255), tex_coords.1);
+                        let v3 = Vert::cons(tri_vertices.2, Color::cons(255, 255, 255), tex_coords.2);
+
+                        tris.push(Tri::cons_verts(v1, v2, v3));
                     }
                 }
                 _ => {}
             }
         }
 
-        Mesh::cons(tris, Vec3f::cons(0, 0, 0))
+        Mesh::cons(tris, Vec3f::cons(0, 0, 0), texpath)
     }
 
     pub fn rotatex(&mut self, angle: Float) {

@@ -85,7 +85,7 @@ fn main() {
             }
             mesh.rotatex(0.03);
             mesh.rotatey(0.01);
-            mesh.rotatez(0.07);
+            mesh.rotatez(0.03);
         }
 
         window.update_with_buffer(buffer.get_pixels(), buffer.width, buffer.height).unwrap();

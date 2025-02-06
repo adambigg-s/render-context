@@ -20,7 +20,13 @@ impl Floatify for Int {
 }
 
 impl Floatify for Float {
-    fn floatify(self) -> Float {self}
+    fn floatify(self) -> Float { self }
+}
+
+impl Floatify for u8 {
+    fn floatify(self) -> Float {
+        self as Float
+    }
 }
 
 
@@ -41,11 +47,6 @@ impl Vec2i {
 
     pub fn det(&self, other: &Self) -> Int {
         self.x * other.y - self.y * other.x
-    }
-
-    pub fn clamp_positive(&mut self, height: Int, width: Int) {
-        self.x = self.x.max(0).min(width);
-        self.y = self.y.max(0).min(height);
     }
 }
 
@@ -84,8 +85,26 @@ pub struct Vec3i {
 }
 
 impl Vec3i {
-    fn cons(x: Int, y: Int, z: Int) -> Vec3i {
+    pub fn cons(x: Int, y: Int, z: Int) -> Vec3i {
         Vec3i { x, y, z }
+    }
+
+    pub fn detxy(&self, other: &Self) -> Int {
+        self.x * other.y - self.y * other.x
+    }
+}
+
+impl Add for Vec3i {
+    type Output = Vec3i;
+    fn add(self, other: Self) -> Self::Output {
+        Vec3i::cons(self.x + other.x, self.y + other.y, self.z + other.z)
+    }
+}
+
+impl Sub for Vec3i {
+    type Output = Vec3i;
+    fn sub(self, other: Self) -> Self::Output {
+        Vec3i::cons(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
 

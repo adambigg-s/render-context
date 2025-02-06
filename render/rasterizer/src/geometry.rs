@@ -184,7 +184,7 @@ impl Mesh {
                 }
                 "vt" => {
                     let u: Float = parts[1].parse().unwrap();
-                    let v: Float = parts[2].parse().unwrap();
+                    // let v: Float = parts[2].parse().unwrap();
                     let v: Float = 1.0 - parts[2].parse::<Float>().unwrap();
                     tex_coords.push(Vec2f::cons(u, v));
                 }

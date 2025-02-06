@@ -30,9 +30,9 @@ type Int = i32;
 const FOV: Float = 90.;
 const FPS: usize = 120;
 const BACKGROUND: u32 = 0xffbbbbbb;
-const RESMOD: usize = 2;
-const HEIGHT: usize = 1440 / RESMOD;
-const WIDTH: usize  = 2560 / RESMOD;
+const RESMOD: usize = 1;
+const HEIGHT: usize = 1080 / RESMOD;
+const WIDTH: usize  = 1920 / RESMOD;
 
 
 
@@ -55,9 +55,9 @@ fn main() {
     let mut mesh = Mesh::build_from_file_extended("portal.obj", 55., Some("portal_tex.jpg"));
     // let mut mesh = Mesh::build_from_file_extended("ak47/ak47.obj", 1., Some("ak47/ak47.png"));
     // let mut mesh = Mesh::build_from_file_extended("plant/plant.obj", 1., Some("portal_tex.jpg"));
-    let mut mesh = Mesh::build_from_file_extended("penguin/penguin.obj", 150., Some("penguin/penguin.tif"));
-    let mut mesh = Mesh::build_from_file_extended("emperor/emperor.obj", 1., Some("emperor/emperor.jpg"));
-    mesh.center = Vec3f::cons(0, 0, 60);
+    // let mut mesh = Mesh::build_from_file_extended("penguin/penguin.obj", 150., Some("penguin/penguin.tif"));
+    // let mut mesh = Mesh::build_from_file_extended("emperor/emperor.obj", 1., Some("emperor/emperor.jpg"));
+    mesh.center = Vec3f::cons(0, 0, 0);
 
     while !window.is_key_down(Key::Escape) && !window.is_key_down(Key::C) {
         let framestart = Instant::now();
@@ -88,9 +88,9 @@ fn main() {
             if window.is_key_down(Key::E) {
                 mesh.rotatez(-0.02);
             }
-            // mesh.rotatex(0.003);
-            // mesh.rotatey(0.001);
-            // mesh.rotatez(0.008);
+            mesh.rotatex(0.01);
+            mesh.rotatey(0.005);
+            mesh.rotatez(0.01);
         }
 
         window.update_with_buffer(buffer.get_pixels(), buffer.width, buffer.height).unwrap();

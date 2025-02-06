@@ -5,6 +5,7 @@
 
 use std::fs::read_to_string;
 
+use crate::texture::Texture;
 use crate::{Color, Float, Int};
 use crate::math::Vec3f;
 
@@ -113,11 +114,12 @@ pub struct Mesh {
     pub tris: Vec<Tri>,
     pub center: Vec3f,
     pub rotation: Vec3f,
+    pub texture: Option<Texture>,
 }
 
 impl Mesh {
     pub fn cons(tris: Vec<Tri>, center: Vec3f) -> Mesh {
-        Mesh { tris, center, rotation: Vec3f::cons(0, 0, 0) }
+        Mesh { tris, center, rotation: Vec3f::cons(0, 0, 0), texture: None }
     }
 
     pub fn build_from_file(path: &str, scaling: Float) -> Mesh {

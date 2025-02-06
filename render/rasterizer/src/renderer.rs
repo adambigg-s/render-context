@@ -20,7 +20,7 @@ pub struct Renderer<'d> {
 
 impl<'d> Renderer<'d> {
     pub fn cons(buffer: &'d mut Buffer, mesh: &'d Mesh, camera: &'d Camera, fov: Float) -> Renderer<'d> {
-        let mut lighting_vec = Vec3f::cons(-6, 1, -2);
+        let mut lighting_vec = Vec3f::cons(-3, 1, 4);
         lighting_vec.normalize();
         let scale = buffer.get_half_width() / (fov / 2.).to_degrees().tan();
         Renderer { buffer, mesh, camera, lighting_vec, scale }

@@ -28,14 +28,14 @@ impl<'d> Renderer<'d> {
 
     pub fn render_mesh(&mut self) {
         self.mesh.tris.iter().for_each(|tri| {
-            self.render_triangle(tri, self.mesh.rotation);
+            self.render_triangle(tri);
         });
     }
 
     #[allow(dead_code)]
     pub fn render_wireframe(&mut self) {
         self.mesh.tris.iter().for_each(|tri| {
-            if let Some((triangle, _)) = self.prep_triangle(tri, self.mesh.rotation) {
+            if let Some((triangle, _)) = self.prep_triangle(tri) {
                 self.draw_line(triangle.a.pos, triangle.b.pos);
                 self.draw_line(triangle.a.pos, triangle.c.pos);
                 self.draw_line(triangle.c.pos, triangle.b.pos);
@@ -43,8 +43,8 @@ impl<'d> Renderer<'d> {
         })
     }
 
-    pub fn render_triangle(&mut self, tri: &Tri, rotation: Vec3f) {
-        if let Some((triangle, lighting)) = self.prep_triangle(tri, rotation) {
+    pub fn render_triangle(&mut self, tri: &Tri) {
+        if let Some((triangle, lighting)) = self.prep_triangle(tri) {
             let (a, b, c) = (triangle.a.pos, triangle.b.pos, triangle.c.pos);
             if triangle.long_left() {
                 self.trace_and_fill(&triangle, a, c, a, b, lighting);
@@ -65,10 +65,11 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn prep_triangle(&mut self, tri: &Tri, rotation: Vec3f) -> Option<(Tri, Float)> {
+    fn prep_triangle(&mut self, tri: &Tri) -> Option<(Tri, Float)> {
         let mut triangle: Tri = *tri;
-        triangle.rotatezyx(rotation);
+        triangle.rotatezyx(self.mesh.rotation);
         triangle.translate_negative(self.camera.position);
+        triangle.translate_negative(self.mesh.center);
 
         let norm = triangle.get_normal();
         let lighting = self.lighting_vec.inner_prod(&norm).max(0.05);

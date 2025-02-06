@@ -47,12 +47,14 @@ fn main() {
 
     let tri1 = Tri::cons(Vec3f::cons(0, -50, 20), Vec3f::cons(0, 50, 20), Vec3f::cons(0, 0, -50));
     let tri2 = Tri::cons(Vec3f::cons(0, 50, 20), Vec3f::cons(0, 50, -20), Vec3f::cons(0, 0, -50));
-    let mut mesh = Mesh::cons(vec![tri1], Vec3f::cons(0, 0, 0));
+    let mut mesh = Mesh::cons(vec![tri1], Vec3f::cons(0, -50, 0));
     mesh.tris.push(tri2);
     let mut mesh = Mesh::build_from_file("icosahedron.vert", 55.);
     let mut mesh = Mesh::build_from_file_extended("tree.obj", 3.);
     let mut mesh = Mesh::build_from_file_extended("penguin/penguin.obj", 150.);
     let mut mesh = Mesh::build_from_file_extended("portal.obj", 55.);
+    let mut mesh = Mesh::build_from_file_extended("plant/plant.obj", 1.);
+    mesh.center = Vec3f::cons(0, 0, 37);
 
     while !window.is_key_down(Key::Escape) && !window.is_key_down(Key::C) {
         let framestart = Instant::now();

@@ -24,6 +24,12 @@ impl Color {
     pub fn as_vec3f(&self) -> Vec3f {
         Vec3f::cons(self.red, self.green, self.blue)
     }
+
+    pub fn attenuate(&mut self, value: Float) {
+        self.red *= value;
+        self.green *= value;
+        self.blue *= value;
+    }
 }
 
 
@@ -38,15 +44,17 @@ impl Buffer {
     pub fn cons(height: usize, width: usize) -> Buffer {
         Buffer {
             height, width,
-            pixels: vec![0; width * height], depth: vec![1e+9; width * height]
+            pixels: vec![0; width * height], depth: vec![1e+12; width * height]
         }
     }
 
-    pub fn set(&mut self, x: usize, y: usize, color: Color) {
+    pub fn set(&mut self, x: usize, y: usize, color: Color, depth: Float) {
         {
             debug_assert!(self.inbounds(x, y));
         }
         let idx = self.idx(x, y);
+        if self.depth[idx] < depth + 0.1 { return; }
+        self.depth[idx] = depth;
         self.pixels[idx] = color.to_u32();
     }
 
@@ -72,7 +80,7 @@ impl Buffer {
 
     pub fn clear(&mut self) {
         self.pixels.fill(BACKGROUND);
-        self.depth.fill(1e+9);
+        self.depth.fill(1e+12);
     }
 
     pub fn inbounds(&self, x: usize, y: usize) -> bool {

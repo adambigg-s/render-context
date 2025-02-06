@@ -60,6 +60,16 @@ impl Tri {
         normal
     }
 
+    pub fn interpolate_depth(&self, weights: Vec3f) -> Float {
+        let depths = Vec3f::cons(self.a.pos.z, self.b.pos.z, self.c.pos.z);
+        depths.inner_prod(&weights)
+    }
+
+    pub fn interpolate_depth_inverse(&self, weights: Vec3f) -> Float {
+        let depths = Vec3f::cons(1. / self.a.pos.z, 1. / self.b.pos.z, 1. / self.c.pos.z);
+        1. / depths.inner_prod(&weights)
+    }
+
     pub fn rotatex(&mut self, angle: Float) {
         self.a.pos.rotatex(angle);
         self.b.pos.rotatex(angle);
@@ -82,6 +92,12 @@ impl Tri {
         self.rotatez(angles.z);
         self.rotatey(angles.y);
         self.rotatex(angles.x);
+    }
+
+    pub fn translate_negative(&mut self, vec: Vec3f) {
+        self.a.pos -= vec;
+        self.b.pos -= vec;
+        self.c.pos -= vec;
     }
 
     pub fn long_left(&self) -> bool {
@@ -189,7 +205,7 @@ pub struct Barycentric<'d> {
     a: Vec3f,
     b: Vec3f,
     c: Vec3f,
-    denominator: Float,
+    inv_den: Float,
 }
 
 impl Barycentric<'_> {
@@ -197,8 +213,10 @@ impl Barycentric<'_> {
         let a = triangle.a.pos;
         let b = triangle.b.pos;
         let c = triangle.c.pos;
-        let denominator = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
-        Barycentric { triangle, a, b, c, denominator }
+        let den = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+        let inv_den = 1. / den;
+        
+        Barycentric { triangle, a, b, c, inv_den }
     }
 
     pub fn weights(&self, x: Int, y: Int) -> Vec3f {
@@ -207,8 +225,8 @@ impl Barycentric<'_> {
         let a = self.a;
         let b = self.b;
         let c = self.c;
-        let w1 = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) / self.denominator;
-        let w2 = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) / self.denominator;
+        let w1 = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) * self.inv_den;
+        let w2 = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) * self.inv_den;
         Vec3f::cons(w1, w2, 1. - w1 - w2)
     }
 }

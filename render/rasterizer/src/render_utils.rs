@@ -13,8 +13,16 @@ pub struct Color {
 }
 
 impl Color {
-    pub fn cons(red: u8, green: u8, blue: u8) -> Color {
+    pub fn cons<T>(red: T, green: T, blue: T) -> Color
+    where T: Floatify {
         Color { red: red.floatify(), green: green.floatify(), blue: blue.floatify() }
+    }
+
+    pub fn from_u32(color: u32) -> Color {
+        let red = (color >> 16 & 0xff) as u8;
+        let green = (color >> 8 & 0xff) as u8;
+        let blue = (color & 0xff) as u8;
+        Color::cons(red, green, blue)
     }
 
     pub fn to_u32(self) -> u32 {
@@ -42,10 +50,7 @@ pub struct Buffer {
 
 impl Buffer {
     pub fn cons(height: usize, width: usize) -> Buffer {
-        Buffer {
-            height, width,
-            pixels: vec![0; width * height], depth: vec![1e+12; width * height]
-        }
+        Buffer { height, width, pixels: vec![BACKGROUND; width * height], depth: vec![1e+12; width * height] }
     }
 
     pub fn set(&mut self, x: usize, y: usize, color: Color, depth: Float) {
@@ -53,7 +58,7 @@ impl Buffer {
             debug_assert!(self.inbounds(x, y));
         }
         let idx = self.idx(x, y);
-        if self.depth[idx] < depth + 0.1 { return; }
+        if self.depth[idx] < depth { return; }
         self.depth[idx] = depth;
         self.pixels[idx] = color.to_u32();
     }
@@ -83,12 +88,19 @@ impl Buffer {
         self.depth.fill(1e+12);
     }
 
-    pub fn inbounds(&self, x: usize, y: usize) -> bool {
+    #[inline]
+    pub const fn inbounds(&self, x: usize, y: usize) -> bool {
         x < self.width && y < self.height
     }
 
-    fn idx(&self, x: usize, y: usize) -> usize {
-        (self.height-1 - y) * self.width + x
+    #[inline]
+    const fn idx(&self, x: usize, y: usize) -> usize {
+        self.height_inversion(y) * self.width + x
+    }
+
+    #[inline]
+    const fn height_inversion(&self, y: usize) -> usize {
+        self.height-1 - y
     }
 }
 

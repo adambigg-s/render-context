@@ -9,7 +9,7 @@ use crate::render_utils::Buffer;
 
 pub fn make_window(buffer: &Buffer, fps: usize, scale: Scale) -> Window {
     let mut window = Window::new(
-        "software rendering mesh",
+        "",
         buffer.width,
         buffer.height,
         WindowOptions { scale, ..Default::default() }
@@ -17,3 +17,19 @@ pub fn make_window(buffer: &Buffer, fps: usize, scale: Scale) -> Window {
     window.set_target_fps(fps);
     window
 }
+
+
+
+// const OPTION: bool = false;
+
+// fn gen_range(x: i32) -> Range<i32> {
+//     #[ifdef(OPTION, true)]
+//     {
+//         return 0..x
+//     }
+//     #[else]
+//     {
+//         return 0..=x
+//     }
+//     #[endif]
+// }

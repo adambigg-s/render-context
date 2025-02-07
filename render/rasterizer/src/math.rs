@@ -3,7 +3,7 @@
 
 
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::{Float, Int};
 
@@ -259,5 +259,14 @@ impl Div<Float> for Vec3f {
 impl DivAssign<Float> for Vec3f {
     fn div_assign(&mut self, other: Float) {
         self.x /= other; self.y /= other; self.z /= other;
+    }
+}
+
+
+
+impl Neg for Vec3f {
+    type Output = Vec3f;
+    fn neg(self) -> Self::Output {
+        Vec3f::cons(-self.x, -self.y, -self.z)
     }
 }

@@ -77,7 +77,7 @@ impl<'d> Renderer<'d> {
 
         let norm = triangle.get_normal();
         let lighting = self.lighting_vec.inner_prod(&norm).max(0.05);
-        if norm.x > 0.25 {
+        if norm.x > 0.15 {
             return None;
         }
         
@@ -111,7 +111,7 @@ impl<'d> Renderer<'d> {
         let y = starting.y;
         for x in starting.x..ending.x {
             if !self.buffer.inbounds(x as usize, y as usize) { return; }
-            let mut color = Color::cons(0, 255, 255);
+            let mut color = Color::cons(222, 0, 0);
             let barys = bary.weights(x, y);
             let xtex = triangle.interpolate_tex_u(barys);
             let ytex = triangle.interpolate_tex_v(barys);
@@ -133,7 +133,7 @@ impl<'d> Renderer<'d> {
     }
 
     fn view_to_screen(&self, target: &Vert) -> Vert {
-        let scrx  = target.pos.y / target.pos.x * self.scale + self.buffer.get_half_width();
+        let scrx = target.pos.y / target.pos.x * self.scale + self.buffer.get_half_width();
         let scry = -target.pos.z / target.pos.x * self.scale + self.buffer.get_half_height();
         Vert::cons(Vec3f::cons(scrx, scry, target.pos.x), target.color, target.texpos)
     }

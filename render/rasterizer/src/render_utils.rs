@@ -1,21 +1,25 @@
 #![allow(dead_code)]
 
-
-
-use crate::{Float, BACKGROUND};
 use crate::math::{Floatify, Vec3f};
-
-
+use crate::{Float, BACKGROUND};
 
 #[derive(Clone, Copy)]
 pub struct Color {
-    pub red: Float, pub green: Float, pub blue: Float,
+    pub red: Float,
+    pub green: Float,
+    pub blue: Float,
 }
 
 impl Color {
     pub fn cons<T>(red: T, green: T, blue: T) -> Color
-    where T: Floatify {
-        Color { red: red.floatify(), green: green.floatify(), blue: blue.floatify() }
+    where
+        T: Floatify,
+    {
+        Color {
+            red: red.floatify(),
+            green: green.floatify(),
+            blue: blue.floatify(),
+        }
     }
 
     pub fn from_u32(color: u32) -> Color {
@@ -40,17 +44,21 @@ impl Color {
     }
 }
 
-
-
 pub struct Buffer {
-    pub height: usize, pub width: usize,
+    pub height: usize,
+    pub width: usize,
     pixels: Vec<u32>,
     depth: Vec<Float>,
 }
 
 impl Buffer {
     pub fn cons(height: usize, width: usize) -> Buffer {
-        Buffer { height, width, pixels: vec![BACKGROUND; width * height], depth: vec![1e+12; width * height] }
+        Buffer {
+            height,
+            width,
+            pixels: vec![BACKGROUND; width * height],
+            depth: vec![1e+12; width * height],
+        }
     }
 
     pub fn set(&mut self, x: usize, y: usize, color: Color, depth: Float) {
@@ -58,7 +66,9 @@ impl Buffer {
             debug_assert!(self.inbounds(x, y));
         }
         let idx = self.idx(x, y);
-        if self.depth[idx] < depth { return; }
+        if self.depth[idx] < depth {
+            return;
+        }
         self.depth[idx] = depth;
         self.pixels[idx] = color.to_u32();
     }
@@ -100,11 +110,9 @@ impl Buffer {
 
     #[inline]
     const fn height_inversion(&self, y: usize) -> usize {
-        self.height-1 - y
+        self.height - 1 - y
     }
 }
-
-
 
 #[allow(dead_code)]
 pub struct Camera {
@@ -114,6 +122,9 @@ pub struct Camera {
 
 impl Camera {
     pub fn cons(position: Vec3f) -> Camera {
-        Camera { position, rotation: Vec3f::cons(0, 0, 0) }
+        Camera {
+            position,
+            rotation: Vec3f::cons(0, 0, 0),
+        }
     }
 }

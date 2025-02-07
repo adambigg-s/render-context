@@ -12,13 +12,15 @@ pub fn make_window(buffer: &Buffer, fps: usize, scale: Scale) -> Window {
         "",
         buffer.width,
         buffer.height,
-        WindowOptions { scale, ..Default::default() }
-    ).unwrap();
+        WindowOptions {
+            scale,
+            ..Default::default()
+        },
+    )
+    .unwrap();
     window.set_target_fps(fps);
     window
 }
-
-
 
 // const OPTION: bool = false;
 

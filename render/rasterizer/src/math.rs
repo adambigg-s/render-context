@@ -160,6 +160,30 @@ impl Vec3f {
         self.z = z;
     }
 
+    pub fn inv_rotatex(&mut self, a: Float) {
+        let Vec3f { x, y, z } = *self;
+        let (sin, cos) = a.sin_cos();
+        self.x = x;
+        self.y = y * cos + z * sin;
+        self.z = -y * sin + z * cos;
+    }
+
+    pub fn inv_rotatey(&mut self, b: Float) {
+        let Vec3f { x, y, z } = *self;
+        let (sin, cos) = b.sin_cos();
+        self.x = x * cos - z * sin;
+        self.y = y;
+        self.z = x * sin + z * cos;
+    }
+
+    pub fn inv_rotatez(&mut self, c: Float) {
+        let Vec3f { x, y, z } = *self;
+        let (sin, cos) = c.sin_cos();
+        self.x = x * cos + y * sin;
+        self.y = -x * sin + y * cos;
+        self.z = z;
+    }
+
     pub fn rotationmatxyz(&mut self, angles: Vec3f) {
         self.rotatex(angles.x);
         self.rotatey(angles.y);
@@ -170,6 +194,18 @@ impl Vec3f {
         self.rotatez(angles.z);
         self.rotatey(angles.y);
         self.rotatex(angles.x);
+    }
+
+    pub fn inv_rotationmatxyz(&mut self, angles: Vec3f) {
+        self.inv_rotatex(angles.x);
+        self.inv_rotatey(angles.y);
+        self.inv_rotatez(angles.z);
+    }
+
+    pub fn inv_rotationmatzyx(&mut self, angles: Vec3f) {
+        self.inv_rotatez(angles.z);
+        self.inv_rotatey(angles.y);
+        self.inv_rotatex(angles.x);
     }
 
     pub fn reflex(&mut self) {
@@ -186,6 +222,12 @@ impl Vec3f {
 
     pub fn inner_prod(&self, other: &Vec3f) -> Float {
         self.x * other.x + self.y * other.y + self.z * other.z
+    }
+
+    pub fn normal(&self) -> Vec3f {
+        let mut vec = *self;
+        vec.normalize();
+        vec
     }
 
     pub fn normalize(&mut self) {

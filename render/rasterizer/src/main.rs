@@ -28,7 +28,7 @@ type Int = i32;
 const FOV: Float = 90.;
 const FPS: usize = 120;
 const BACKGROUND: u32 = 0xffbbbbbb;
-const RESMOD: usize = 2;
+const RESMOD: usize = 5;
 const HEIGHT: usize = 1080 / RESMOD;
 const WIDTH: usize = 1920 / RESMOD;
 
@@ -40,9 +40,9 @@ fn main() {
         std::env::set_var("RUST_BACKTRACE", "full");
     }
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let mut window = make_window(&buffer, FPS, Scale::X2);
-    let frame = RefFrame::cons(Vec3f::cons(-20, -80, 20), 10.);
+    let mut window = make_window(&buffer, FPS, Scale::X4);
     let camera = Camera::cons(Vec3f::cons(-100, 0, 0));
+    let frame = RefFrame::cons(Vec3f::cons(0, -30, -20), 10.);
 
     let tri1 = Tri::cons(
         Vec3f::cons(0, -50, 20),
@@ -62,7 +62,7 @@ fn main() {
     // let mut mesh = Mesh::build_from_file_extended("emperor/emperor.obj", 1., Some("emperor/emperor.jpg"));
     // let mut mesh = Mesh::build_from_file_extended("plant/plant.obj", 1., Some("portal_tex.jpg"));
     // let mut mesh = Mesh::build_from_file_extended("eyeball.obj", 35., None);
-    // let mut mesh = Mesh::build_from_file_extended("portal.obj", 55., Some("portal_tex.jpg"));
+    let mut mesh = Mesh::build_from_file_extended("portal.obj", 55., Some("portal_tex.jpg"));
     mesh.center = Vec3f::cons(0, 0, 0);
 
     while !window.is_key_down(Key::Escape) && !window.is_key_down(Key::C) {
@@ -70,6 +70,7 @@ fn main() {
         buffer.clear();
 
         let mut renderer = Renderer::cons(&mut buffer, &mesh, &camera, FOV);
+        renderer.render_refframe(&frame);
         if !window.is_key_down(Key::P) {
             renderer.render_mesh();
         }
@@ -77,6 +78,13 @@ fn main() {
             renderer.render_wireframe();
         }
         if !window.is_key_down(Key::R) {
+            if window.is_key_down(Key::K) {
+                let mut rotation = Vec3f::cons(0., 0., 0.1);
+                rotation.inv_rotationmatzyx(mesh.rotation);
+                mesh.rotatez(rotation.z);
+                mesh.rotatey(rotation.y);
+                mesh.rotatex(rotation.x);
+            }
             if window.is_key_down(Key::W) {
                 mesh.rotatex(0.02);
             }

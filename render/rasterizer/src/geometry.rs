@@ -26,6 +26,20 @@ impl Vert {
 
 
 
+pub struct PolyData {
+    pub tri: Tri,
+    pub normal: Vec3f,
+    pub lighting: Float,
+}
+
+impl PolyData {
+    pub fn cons(tri: Tri, normal: Vec3f, lighting: Float) -> PolyData {
+        PolyData { tri, normal, lighting }
+    }
+}
+
+
+
 #[derive(Clone, Copy)]
 pub struct Tri {
     pub a: Vert, pub b: Vert, pub c: Vert,
@@ -42,6 +56,22 @@ impl Tri {
 
     pub fn cons_verts(a: Vert, b: Vert, c: Vert) -> Tri {
         Tri { a, b, c }
+    }
+
+    pub fn sort_vertices_vertical(&mut self) {
+        if self.c.pos.y > self.b.pos.y {
+            (self.c, self.b) = (self.b, self.c);
+        }
+        if self.b.pos.y > self.a.pos.y {
+            (self.a, self.b) = (self.b, self.a);
+        }
+        if self.c.pos.y > self.b.pos.y {
+            (self.c, self.b) = (self.b, self.c);
+        }
+
+        {
+            debug_assert!(self.a.pos.y >= self.b.pos.y && self.b.pos.y >= self.c.pos.y);
+        }
     }
 
     pub fn get_red_ordered(&self) -> Vec3f {
@@ -188,7 +218,7 @@ impl Mesh {
                 }
                 "vt" => {
                     let u: Float = parts[1].parse().unwrap();
-                    let v: Float = 1.0 - parts[2].parse::<Float>().unwrap();
+                    let v: Float = parts[2].parse::<Float>().unwrap() * -1. + 1.;
                     tex_coords.push(Vec2f::cons(u, v));
                 }
                 "f" => {
@@ -205,9 +235,9 @@ impl Mesh {
                         else {
                             Vec2f::cons(0, 0,)
                         };
-
                         face_vertices.push((vert, tex_coord));
                     }
+
                     for i in 2..face_vertices.len() {
                         let (v0, t0) = face_vertices[0];
                         let (v1, t1) = face_vertices[i - 1];
@@ -275,6 +305,7 @@ impl Barycentric<'_> {
 
 
 
+#[derive(Clone, Copy)]
 pub struct RefFrame {
     pub center: Vec3f,
     pub length: Float,
@@ -283,5 +314,9 @@ pub struct RefFrame {
 impl RefFrame {
     pub fn cons(center: Vec3f, length: Float) -> RefFrame {
         RefFrame { center, length }
+    }
+
+    pub fn translate(&mut self, translation: Vec3f) {
+        self.center += translation;
     }
 }

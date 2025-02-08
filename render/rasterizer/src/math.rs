@@ -3,7 +3,7 @@
 
 
 
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use crate::{Float, Int};
 
@@ -107,6 +107,21 @@ impl Sub for Vec3i {
         Vec3i::cons(self.x - other.x, self.y - other.y, self.z - other.z)
     }
 }
+
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct Vec2f {
+    pub x: Float, pub y: Float,
+}
+
+impl Vec2f {
+    pub fn cons<T>(x: T, y: T) -> Vec2f
+    where T: Floatify {
+        Vec2f { x: x.floatify(), y: y.floatify() }
+    }
+}
+
 
 
 
@@ -244,5 +259,14 @@ impl Div<Float> for Vec3f {
 impl DivAssign<Float> for Vec3f {
     fn div_assign(&mut self, other: Float) {
         self.x /= other; self.y /= other; self.z /= other;
+    }
+}
+
+
+
+impl Neg for Vec3f {
+    type Output = Vec3f;
+    fn neg(self) -> Self::Output {
+        Vec3f::cons(-self.x, -self.y, -self.z)
     }
 }

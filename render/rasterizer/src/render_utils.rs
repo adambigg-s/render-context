@@ -1,7 +1,12 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
 #![allow(dead_code)]
 
-use crate::math::{Floatify, Vec3f};
+
+
 use crate::{Float, BACKGROUND};
+use crate::math::{Floatify, Vec3f};
+
+
 
 #[derive(Clone, Copy)]
 pub struct Color {
@@ -12,14 +17,8 @@ pub struct Color {
 
 impl Color {
     pub fn cons<T>(red: T, green: T, blue: T) -> Color
-    where
-        T: Floatify,
-    {
-        Color {
-            red: red.floatify(),
-            green: green.floatify(),
-            blue: blue.floatify(),
-        }
+    where T: Floatify {
+        Color { red: red.floatify(), green: green.floatify(), blue: blue.floatify() }
     }
 
     pub fn from_u32(color: u32) -> Color {
@@ -44,6 +43,12 @@ impl Color {
     }
 }
 
+impl Default for Color {
+    fn default() -> Color {
+        Color::cons(255, 255, 255)
+    }
+}
+
 pub struct Buffer {
     pub height: usize,
     pub width: usize,
@@ -53,12 +58,7 @@ pub struct Buffer {
 
 impl Buffer {
     pub fn cons(height: usize, width: usize) -> Buffer {
-        Buffer {
-            height,
-            width,
-            pixels: vec![BACKGROUND; width * height],
-            depth: vec![1e+12; width * height],
-        }
+        Buffer { height, width, pixels: vec![BACKGROUND; width * height], depth: vec![1e+12; width * height], }
     }
 
     pub fn set(&mut self, x: usize, y: usize, color: Color, depth: Float) {
@@ -69,6 +69,7 @@ impl Buffer {
         if self.depth[idx] < depth {
             return;
         }
+
         self.depth[idx] = depth;
         self.pixels[idx] = color.to_u32();
     }
@@ -110,9 +111,11 @@ impl Buffer {
 
     #[inline]
     const fn height_inversion(&self, y: usize) -> usize {
-        self.height - 1 - y
+        self.height-1 - y
     }
 }
+
+
 
 #[allow(dead_code)]
 pub struct Camera {

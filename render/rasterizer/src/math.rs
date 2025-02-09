@@ -13,14 +13,14 @@ pub trait Floatify {
     fn floatify(self) -> Float;
 }
 
+impl Floatify for Float {
+    fn floatify(self) -> Float { self }
+}
+
 impl Floatify for Int {
     fn floatify(self) -> Float {
         self as Float
     }
-}
-
-impl Floatify for Float {
-    fn floatify(self) -> Float { self }
 }
 
 impl Floatify for u8 {
@@ -41,11 +41,11 @@ impl Vec2i {
         Vec2i { x, y }
     }
 
-    pub fn fromvec2u(vec: Vec2u) -> Vec2i {
+    pub fn from_vec2u(vec: Vec2u) -> Vec2i {
         Vec2i::cons(vec.x as Int, vec.y as Int)
     }
 
-    pub fn det(&self, other: &Self) -> Int {
+    pub fn determinant(&self, other: &Self) -> Int {
         self.x * other.y - self.y * other.x
     }
 }
@@ -89,7 +89,7 @@ impl Vec3i {
         Vec3i { x, y, z }
     }
 
-    pub fn detxy(&self, other: &Self) -> Int {
+    pub fn determinant_xy(&self, other: &Self) -> Int {
         self.x * other.y - self.y * other.x
     }
 }
@@ -124,7 +124,6 @@ impl Vec2f {
 
 
 
-
 #[derive(Debug, Clone, Copy)]
 pub struct Vec3f {
     pub x: Float, pub y: Float, pub z: Float,
@@ -136,7 +135,7 @@ impl Vec3f {
         Vec3f { x: x.floatify(), y: y.floatify(), z: z.floatify() }
     }
 
-    pub fn rotatex(&mut self, a: Float) {
+    pub fn rot_x(&mut self, a: Float) {
         let Vec3f { x, y, z } = *self;
         let (sin, cos) = a.sin_cos();
         self.x = x;
@@ -144,7 +143,7 @@ impl Vec3f {
         self.z = y * sin + z * cos;
     }
 
-    pub fn rotatey(&mut self, b: Float) {
+    pub fn rot_y(&mut self, b: Float) {
         let Vec3f { x, y, z } = *self;
         let (sin, cos) = b.sin_cos();
         self.x = x * cos + z * sin;
@@ -152,7 +151,7 @@ impl Vec3f {
         self.z = -x * sin + z * cos;
     }
 
-    pub fn rotatez(&mut self, c: Float) {
+    pub fn rot_z(&mut self, c: Float) {
         let Vec3f { x, y, z } = *self;
         let (sin, cos) = c.sin_cos();
         self.x = x * cos - y * sin;
@@ -160,7 +159,7 @@ impl Vec3f {
         self.z = z;
     }
 
-    pub fn inv_rotatex(&mut self, a: Float) {
+    pub fn inv_rot_x(&mut self, a: Float) {
         let Vec3f { x, y, z } = *self;
         let (sin, cos) = a.sin_cos();
         self.x = x;
@@ -168,7 +167,7 @@ impl Vec3f {
         self.z = -y * sin + z * cos;
     }
 
-    pub fn inv_rotatey(&mut self, b: Float) {
+    pub fn inv_rot_y(&mut self, b: Float) {
         let Vec3f { x, y, z } = *self;
         let (sin, cos) = b.sin_cos();
         self.x = x * cos - z * sin;
@@ -176,7 +175,7 @@ impl Vec3f {
         self.z = x * sin + z * cos;
     }
 
-    pub fn inv_rotatez(&mut self, c: Float) {
+    pub fn inv_rot_z(&mut self, c: Float) {
         let Vec3f { x, y, z } = *self;
         let (sin, cos) = c.sin_cos();
         self.x = x * cos + y * sin;
@@ -184,39 +183,39 @@ impl Vec3f {
         self.z = z;
     }
 
-    pub fn rotationmatxyz(&mut self, angles: Vec3f) {
-        self.rotatex(angles.x);
-        self.rotatey(angles.y);
-        self.rotatez(angles.z);
+    pub fn rot_xyz(&mut self, angles: Vec3f) {
+        self.rot_x(angles.x);
+        self.rot_y(angles.y);
+        self.rot_z(angles.z);
     }
 
-    pub fn rotationmatzyx(&mut self, angles: Vec3f) {
-        self.rotatez(angles.z);
-        self.rotatey(angles.y);
-        self.rotatex(angles.x);
+    pub fn rot_zyx(&mut self, angles: Vec3f) {
+        self.rot_z(angles.z);
+        self.rot_y(angles.y);
+        self.rot_x(angles.x);
     }
 
-    pub fn inv_rotationmatxyz(&mut self, angles: Vec3f) {
-        self.inv_rotatex(angles.x);
-        self.inv_rotatey(angles.y);
-        self.inv_rotatez(angles.z);
+    pub fn inv_rot_xyz(&mut self, angles: Vec3f) {
+        self.inv_rot_x(angles.x);
+        self.inv_rot_y(angles.y);
+        self.inv_rot_z(angles.z);
     }
 
-    pub fn inv_rotationmatzyx(&mut self, angles: Vec3f) {
-        self.inv_rotatez(angles.z);
-        self.inv_rotatey(angles.y);
-        self.inv_rotatex(angles.x);
+    pub fn inv_rot_zyx(&mut self, angles: Vec3f) {
+        self.inv_rot_z(angles.z);
+        self.inv_rot_y(angles.y);
+        self.inv_rot_x(angles.x);
     }
 
-    pub fn reflex(&mut self) {
+    pub fn refl_x(&mut self) {
         self.x = -self.x;
     }
 
-    pub fn refley(&mut self) {
+    pub fn refl_y(&mut self) {
         self.y = -self.y;
     }
 
-    pub fn reflez(&mut self) {
+    pub fn refl_z(&mut self) {
         self.z = -self.z;
     }
 
@@ -224,7 +223,7 @@ impl Vec3f {
         self.x * other.x + self.y * other.y + self.z * other.z
     }
 
-    pub fn normal(&self) -> Vec3f {
+    pub fn get_normalized(&self) -> Vec3f {
         let mut vec = *self;
         vec.normalize();
         vec
@@ -246,21 +245,6 @@ impl Vec3f {
 
 
 
-impl Sub for Vec3f {
-    type Output = Vec3f;
-    fn sub(self, other: Vec3f) -> Self::Output {
-        Vec3f::cons(self.x - other.x, self.y - other.y, self.z - other.z)
-    }
-}
-
-impl SubAssign for Vec3f {
-    fn sub_assign(&mut self, other: Self) {
-        self.x -= other.x; self.y -= other.y; self.z -= other.z;
-    }
-}
-
-
-
 impl Add for Vec3f {
     type Output = Vec3f;
     fn add(self, other: Vec3f) -> Self::Output {
@@ -271,6 +255,21 @@ impl Add for Vec3f {
 impl AddAssign for Vec3f {
     fn add_assign(&mut self, other: Self) {
         self.x += other.x; self.y += other.y; self.z += other.z;
+    }
+}
+
+
+
+impl Sub for Vec3f {
+    type Output = Vec3f;
+    fn sub(self, other: Vec3f) -> Self::Output {
+        Vec3f::cons(self.x - other.x, self.y - other.y, self.z - other.z)
+    }
+}
+
+impl SubAssign for Vec3f {
+    fn sub_assign(&mut self, other: Self) {
+        self.x -= other.x; self.y -= other.y; self.z -= other.z;
     }
 }
 

@@ -5,7 +5,7 @@
 use crate::{Float, Int};
 use crate::render_utils::{Buffer, Camera, Color};
 use crate::math::{Vec2i, Vec3f};
-use crate::geometry::{Barycentric, Mesh, PolyData, RefFrame, Tri};
+use crate::geometry::{BarycentricSystem, Mesh, PolyData, RefFrame, Tri};
 
 
 
@@ -40,9 +40,9 @@ impl<'d> Renderer<'d> {
             if let Some(polydata) = self.prepare_triangle(tri) {
                 let mut color = Color::cons(0, 255, 255);
                 color.attenuate(polydata.lighting);
-                self.draw_line(polydata.tri.a.pos, polydata.tri.b.pos, color);
-                self.draw_line(polydata.tri.a.pos, polydata.tri.c.pos, color);
-                self.draw_line(polydata.tri.c.pos, polydata.tri.b.pos, color);
+                self.draw_line_screen(polydata.tri.a.pos, polydata.tri.b.pos, color);
+                self.draw_line_screen(polydata.tri.a.pos, polydata.tri.c.pos, color);
+                self.draw_line_screen(polydata.tri.c.pos, polydata.tri.b.pos, color);
             }
         });
     }
@@ -53,18 +53,18 @@ impl<'d> Renderer<'d> {
         let mut x_arm = Vec3f::cons(frame.length, 0., 0.);
         let mut y_arm = Vec3f::cons(0., frame.length, 0.);
         let mut z_arm = Vec3f::cons(0., 0., frame.length);
-        x_arm.rotationmatzyx(self.mesh.rotation);
-        y_arm.rotationmatzyx(self.mesh.rotation);
-        z_arm.rotationmatzyx(self.mesh.rotation);
+        x_arm.rot_zyx(self.mesh.rotation);
+        y_arm.rot_zyx(self.mesh.rotation);
+        z_arm.rot_zyx(self.mesh.rotation);
 
         frame.translate(-self.camera.position);
         x_arm += frame.center;
         y_arm += frame.center;
         z_arm += frame.center;
 
-        self.draw_world_line(frame.center, x_arm, Color::cons(255, 0, 0));
-        self.draw_world_line(frame.center, y_arm, Color::cons(0, 255, 0));
-        self.draw_world_line(frame.center, z_arm, Color::cons(0, 0, 255));
+        self.draw_line_world(frame.center, x_arm, Color::cons(255, 0, 0));
+        self.draw_line_world(frame.center, y_arm, Color::cons(0, 255, 0));
+        self.draw_line_world(frame.center, z_arm, Color::cons(0, 0, 255));
     }
 
     fn render_triangle(&mut self, tri: &Tri) {
@@ -92,7 +92,7 @@ impl<'d> Renderer<'d> {
         let lighting = self.lighting_vec.inner_prod(&norm).max(0.05);
 
         self.transform_to_screen(&mut triangle);
-        triangle.sort_vertices_vertical();
+        triangle.sort_verts_vertical();
         
         Some(PolyData::cons(triangle, norm, lighting))
     }
@@ -100,7 +100,7 @@ impl<'d> Renderer<'d> {
     fn trace_and_fill(&mut self, poly: &PolyData, e1s: Vec3f, e1e: Vec3f, e2s: Vec3f, e2e: Vec3f) {
         let mut e1 = EdgeTracer::cons(e1s, e1e);
         let mut e2 = EdgeTracer::cons(e2s, e2e);
-        let barycentric = Barycentric::cons(&poly.tri);
+        let barycentric = BarycentricSystem::cons(&poly.tri);
         while let (Some(p1), Some(p2)) = (e1.step_constant(), e2.step_constant()) {
             self.fill_edge_trace(&p1, &p2, poly, &barycentric);
         }
@@ -113,41 +113,43 @@ impl<'d> Renderer<'d> {
     }
 
     fn transform_tri(&mut self, triangle: &mut Tri) {
-        triangle.rotatezyx(self.mesh.rotation);
+        triangle.rot_xyz(self.mesh.rotation);
+        triangle.rot_zyx(-self.camera.rotation);
         triangle.translate(-self.camera.position);
         triangle.translate(self.mesh.center);
-        triangle.rotatezyx(-self.camera.rotation);
     }
 
-    fn fill_edge_trace(&mut self, starting: &Vec2i, ending: &Vec2i, poly: &PolyData, bary: &Barycentric) {
+    fn fill_edge_trace(&mut self, starting: &Vec2i, ending: &Vec2i, poly: &PolyData, bary: &BarycentricSystem) {
         {
             debug_assert!(starting.y == ending.y);
         }
+
         let y = starting.y;
         for x in starting.x..ending.x {
             if !self.buffer.inbounds(x as usize, y as usize) { return; }
 
-            let mut color = Color::cons(222, 0, 0);
-            let barys = bary.weights(x, y);
-            let xtex = poly.tri.interpolate_tex_u(barys);
-            let ytex = poly.tri.interpolate_tex_v(barys);
+            let mut color = Color::default();
+            let coords = bary.get_coords(x, y);
+            let texture_x = poly.tri.interpolate_tex_u(&coords);
+            let texture_y = poly.tri.interpolate_tex_v(&coords);
+
             if let Some(texture) = &self.mesh.texture {
-                color = texture.get_texture(xtex, ytex);
+                color = texture.get_texture(texture_x, texture_y);
             }
             else {
-                color.red = poly.tri.get_red_ordered().inner_prod(&barys);
-                color.green = poly.tri.get_green_ordered().inner_prod(&barys);
-                color.blue = poly.tri.get_blue_ordered().inner_prod(&barys);
+                color.red = poly.tri.get_red_ordered_vec().inner_prod(&coords);
+                color.green = poly.tri.get_green_ordered_vec().inner_prod(&coords);
+                color.blue = poly.tri.get_blue_ordered_vec().inner_prod(&coords);
             }
 
             color.attenuate(poly.lighting);
-            let depth = poly.tri.interpolate_depth_nonlinear(barys);
+            let depth = poly.tri.interpolate_depth_nonlinear(coords);
 
             self.buffer.set(x as usize, y as usize, color, depth);
         }
     }
 
-    fn draw_line(&mut self, p1: Vec3f, p2: Vec3f, color: Color) {
+    fn draw_line_screen(&mut self, p1: Vec3f, p2: Vec3f, color: Color) {
         let mut edge = EdgeTracer::cons(p1, p2);
         while let Some(point) = edge.step_once() {
             if !self.buffer.inbounds(point.x as usize, point.y as usize) { return; }
@@ -156,10 +158,10 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn draw_world_line(&mut self, p1: Vec3f, p2: Vec3f, color: Color) {
+    fn draw_line_world(&mut self, p1: Vec3f, p2: Vec3f, color: Color) {
         let p1 = self.view_to_screen(&p1);
         let p2 = self.view_to_screen(&p2);
-        self.draw_line(p1, p2, color);
+        self.draw_line_screen(p1, p2, color);
     }
 
     fn view_to_screen(&self, target: &Vec3f) -> Vec3f {
@@ -182,8 +184,8 @@ pub struct EdgeTracer {
 
 impl EdgeTracer {
     pub fn cons(start: Vec3f, end: Vec3f) -> EdgeTracer {
-        let current = Vec2i::cons(start.x as Int, start.y as Int);
-        let target = Vec2i::cons(end.x as Int, end.y as Int);
+        let current = Vec2i::cons(start.x.ceil() as Int, start.y.ceil() as Int);
+        let target = Vec2i::cons(end.x.ceil() as Int, end.y.ceil() as Int);
         let dx: i32 = (target.x - current.x).abs();
         let dy: i32 = -(target.y - current.y).abs();
         let int_step_x: i32 = if current.x < target.x { 1 } else { -1 };

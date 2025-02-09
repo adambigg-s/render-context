@@ -4,25 +4,11 @@
 
 
 use std::fs::read_to_string;
+use std::mem::swap;
 
 use crate::{Color, Float, Int};
 use crate::texture::Texture;
 use crate::math::{Vec2f, Vec3f};
-
-
-
-#[derive(Clone, Copy)]
-pub struct Vert {
-    pub pos: Vec3f,
-    pub texpos: Vec2f,
-    pub color: Color,
-}
-
-impl Vert {
-    pub fn cons(pos: Vec3f, color: Color, texpos: Vec2f) -> Vert {
-        Vert { pos, color, texpos }
-    }
-}
 
 
 
@@ -41,12 +27,27 @@ impl PolyData {
 
 
 #[derive(Clone, Copy)]
+pub struct Vert {
+    pub pos: Vec3f,
+    pub texpos: Vec2f,
+    pub color: Color,
+}
+
+impl Vert {
+    pub fn cons(pos: Vec3f, color: Color, texpos: Vec2f) -> Vert {
+        Vert { pos, color, texpos }
+    }
+}
+
+
+
+#[derive(Clone, Copy)]
 pub struct Tri {
     pub a: Vert, pub b: Vert, pub c: Vert,
 }
 
 impl Tri {
-    pub fn cons(a: Vec3f, b: Vec3f, c: Vec3f) -> Tri {
+    pub fn cons_pos(a: Vec3f, b: Vec3f, c: Vec3f) -> Tri {
         Tri {
             a: Vert::cons(a, Color::cons(255, 0, 0), Vec2f::cons(0, 0)),
             b: Vert::cons(b, Color::cons(0, 255, 0), Vec2f::cons(0, 0)),
@@ -54,42 +55,42 @@ impl Tri {
         }
     }
 
-    pub fn cons_verts(a: Vert, b: Vert, c: Vert) -> Tri {
+    pub fn cons_vert(a: Vert, b: Vert, c: Vert) -> Tri {
         Tri { a, b, c }
     }
 
-    pub fn sort_vertices_vertical(&mut self) {
+    pub fn sort_verts_vertical(&mut self) {
         if self.c.pos.y > self.b.pos.y {
-            (self.c, self.b) = (self.b, self.c);
+            // (self.c, self.b) = (self.b, self.c);
+            swap(&mut self.c, &mut self.b);
         }
         if self.b.pos.y > self.a.pos.y {
-            (self.a, self.b) = (self.b, self.a);
+            // (self.a, self.b) = (self.b, self.a);
+            swap(&mut self.b, &mut self.a);
         }
         if self.c.pos.y > self.b.pos.y {
-            (self.c, self.b) = (self.b, self.c);
+            // (self.c, self.b) = (self.b, self.c);
+            swap(&mut self.c, &mut self.b);
         }
-
         {
             debug_assert!(self.a.pos.y >= self.b.pos.y && self.b.pos.y >= self.c.pos.y);
         }
     }
 
-    pub fn get_red_ordered(&self) -> Vec3f {
+    pub fn get_red_ordered_vec(&self) -> Vec3f {
         Vec3f::cons(self.a.color.red, self.b.color.red, self.c.color.red)
     }
     
-    pub fn get_green_ordered(&self) -> Vec3f {
+    pub fn get_green_ordered_vec(&self) -> Vec3f {
         Vec3f::cons(self.a.color.green, self.b.color.green, self.c.color.green)
     }
 
-    pub fn get_blue_ordered(&self) -> Vec3f {
+    pub fn get_blue_ordered_vec(&self) -> Vec3f {
         Vec3f::cons(self.a.color.blue, self.b.color.blue, self.c.color.blue)
     }
 
     pub fn get_normal(&self) -> Vec3f {
-        let mut normal = (self.a.pos - self.b.pos).cross(&(self.a.pos - self.c.pos));
-        normal.normalize();
-        normal
+        (self.a.pos - self.b.pos).cross(&(self.a.pos - self.c.pos)).get_normalized()
     }
 
     pub fn interpolate_depth_linear(&self, weights: Vec3f) -> Float {
@@ -102,38 +103,44 @@ impl Tri {
         1. / depths.inner_prod(&weights)
     }
     
-    pub fn interpolate_tex_u(&self, weights: Vec3f) -> Float {
-        let depths = Vec3f::cons(self.a.texpos.x, self.b.texpos.x, self.c.texpos.x);
-        depths.inner_prod(&weights)
+    pub fn interpolate_tex_u(&self, coords: &Vec3f) -> Float {
+        Vec3f::cons(self.a.texpos.x, self.b.texpos.x, self.c.texpos.x)
+            .inner_prod(coords)
     }
 
-    pub fn interpolate_tex_v(&self, weights: Vec3f) -> Float {
-        let depths = Vec3f::cons(self.a.texpos.y, self.b.texpos.y, self.c.texpos.y);
-        depths.inner_prod(&weights)
+    pub fn interpolate_tex_v(&self, coords: &Vec3f) -> Float {
+        Vec3f::cons(self.a.texpos.y, self.b.texpos.y, self.c.texpos.y)
+            .inner_prod(coords)
     }
 
-    pub fn rotatex(&mut self, angle: Float) {
-        self.a.pos.rotatex(angle);
-        self.b.pos.rotatex(angle);
-        self.c.pos.rotatex(angle);
+    pub fn rot_x(&mut self, angle: Float) {
+        self.a.pos.rot_x(angle);
+        self.b.pos.rot_x(angle);
+        self.c.pos.rot_x(angle);
     }
     
-    pub fn rotatey(&mut self, angle: Float) {
-        self.a.pos.rotatey(angle);
-        self.b.pos.rotatey(angle);
-        self.c.pos.rotatey(angle);
+    pub fn rot_y(&mut self, angle: Float) {
+        self.a.pos.rot_y(angle);
+        self.b.pos.rot_y(angle);
+        self.c.pos.rot_y(angle);
     }
 
-    pub fn rotatez(&mut self, angle: Float) {
-        self.a.pos.rotatez(angle);
-        self.b.pos.rotatez(angle);
-        self.c.pos.rotatez(angle);
+    pub fn rot_z(&mut self, angle: Float) {
+        self.a.pos.rot_z(angle);
+        self.b.pos.rot_z(angle);
+        self.c.pos.rot_z(angle);
     }
 
-    pub fn rotatezyx(&mut self, angles: Vec3f) {
-        self.rotatez(angles.z);
-        self.rotatey(angles.y);
-        self.rotatex(angles.x);
+    pub fn rot_xyz(&mut self, angles: Vec3f) {
+        self.rot_x(angles.x);
+        self.rot_y(angles.y);
+        self.rot_z(angles.z);
+    }
+
+    pub fn rot_zyx(&mut self, angles: Vec3f) {
+        self.rot_z(angles.z);
+        self.rot_y(angles.y);
+        self.rot_x(angles.x);
     }
 
     pub fn translate(&mut self, vec: Vec3f) {
@@ -190,7 +197,7 @@ impl Mesh {
                     let i1: usize = parts[2].parse().unwrap();
                     let i2: usize = parts[3].parse().unwrap();
 
-                    tris.push(Tri::cons(vertices[i0-1], vertices[i1-1], vertices[i2-1]));
+                    tris.push(Tri::cons_pos(vertices[i0-1], vertices[i1-1], vertices[i2-1]));
                 }
                 _ => {}
             }
@@ -247,7 +254,7 @@ impl Mesh {
                         let v1 = Vert::cons(v1, Color::cons(255, 255, 255), t1);
                         let v2 = Vert::cons(v2, Color::cons(255, 255, 255), t2);
 
-                        tris.push(Tri::cons_verts(v0, v1, v2));
+                        tris.push(Tri::cons_vert(v0, v1, v2));
                     }
                 }
                 _ => {}
@@ -257,22 +264,22 @@ impl Mesh {
         Mesh::cons(tris, Vec3f::cons(0, 0, 0), texpath)
     }
 
-    pub fn rotatex(&mut self, angle: Float) {
+    pub fn rotate_x(&mut self, angle: Float) {
         self.rotation.x += angle;
     }
 
-    pub fn rotatey(&mut self, angle: Float) {
+    pub fn rotate_y(&mut self, angle: Float) {
         self.rotation.y += angle;
     }
 
-    pub fn rotatez(&mut self, angle: Float) {
+    pub fn rotate_z(&mut self, angle: Float) {
         self.rotation.z += angle;
     }
 }
 
 
 
-pub struct Barycentric<'d> {
+pub struct BarycentricSystem<'d> {
     triangle: &'d Tri,
     a: Vec3f,
     b: Vec3f,
@@ -280,18 +287,18 @@ pub struct Barycentric<'d> {
     inv_den: Float,
 }
 
-impl Barycentric<'_> {
-    pub fn cons(triangle: &Tri) -> Barycentric {
+impl BarycentricSystem<'_> {
+    pub fn cons(triangle: &Tri) -> BarycentricSystem {
         let a = triangle.a.pos;
         let b = triangle.b.pos;
         let c = triangle.c.pos;
         let den = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
         let inv_den = 1. / den;
         
-        Barycentric { triangle, a, b, c, inv_den }
+        BarycentricSystem { triangle, a, b, c, inv_den }
     }
 
-    pub fn weights(&self, x: Int, y: Int) -> Vec3f {
+    pub fn get_coords(&self, x: Int, y: Int) -> Vec3f {
         let x = x as Float;
         let y = y as Float;
         let a = self.a;

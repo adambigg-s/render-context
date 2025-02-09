@@ -45,11 +45,17 @@ impl Texture {
 
     #[inline]
     fn idx(&self, x: Float, y: Float) -> usize {
-        let nx = ((x * self.get_width()) as usize).clamp(0, self.width-1);
-        let ny = ((y * self.get_height()) as usize).clamp(0, self.height-1);
+        let nx = ((x * self.get_width()) as usize)
+            .clamp(0, self.width-1);
+        let ny = ((y * self.get_height()) as usize)
+            .clamp(0, self.height-1);
+        // let nx = ((x * self.get_width()) as usize).min(self.width-1);
+        // let ny = ((y * self.get_height()) as usize).min(self.height-1);
+
         {
             debug_assert!(self.inbounds(nx, ny), "index: {},{} dims: {},{}", nx, ny, self.width, self.height);
         }
+
         ny * self.width + nx
     }
 

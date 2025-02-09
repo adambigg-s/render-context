@@ -42,26 +42,22 @@ fn main() {
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
     let mut window = make_window(&buffer, FPS, Scale::X4);
     let camera = Camera::cons(Vec3f::cons(-100, 0, 0));
-    let frame = RefFrame::cons(Vec3f::cons(0, -30, -20), 10.);
+    let frame = RefFrame::cons(Vec3f::cons(0, 0, 0), 50.);
 
-    let tri1 = Tri::cons(
+    let tri1 = Tri::cons_pos(
         Vec3f::cons(0, -50, 20),
         Vec3f::cons(0, 50, 20),
         Vec3f::cons(0, 0, -50),
     );
-    let tri2 = Tri::cons(
+    let tri2 = Tri::cons_pos(
         Vec3f::cons(0, 50, 20),
         Vec3f::cons(0, 50, -20),
         Vec3f::cons(0, 0, -50),
     );
     let mut mesh = Mesh::cons(vec![tri1], Vec3f::cons(0, -50, 0), None);
-    // mesh.tris.push(tri2);
+    mesh.tris.push(tri2);
     let mut mesh = Mesh::build_from_file("icosahedron.vert", 55.);
-    // let mut mesh = Mesh::build_from_file_extended("ak47/ak47.obj", 1., Some("ak47/ak47.png"));
-    // let mut mesh = Mesh::build_from_file_extended("penguin/penguin.obj", 150., Some("penguin/penguin.tif"));
-    // let mut mesh = Mesh::build_from_file_extended("emperor/emperor.obj", 1., Some("emperor/emperor.jpg"));
-    // let mut mesh = Mesh::build_from_file_extended("plant/plant.obj", 1., Some("portal_tex.jpg"));
-    // let mut mesh = Mesh::build_from_file_extended("eyeball.obj", 35., None);
+    let mut mesh = Mesh::build_from_file_extended("eyeball.obj", 35., None);
     let mut mesh = Mesh::build_from_file_extended("portal.obj", 55., Some("portal_tex.jpg"));
     mesh.center = Vec3f::cons(0, 0, 0);
 
@@ -80,28 +76,28 @@ fn main() {
         if !window.is_key_down(Key::R) {
             if window.is_key_down(Key::K) {
                 let mut rotation = Vec3f::cons(0., 0., 0.1);
-                rotation.inv_rotationmatzyx(mesh.rotation);
-                mesh.rotatez(rotation.z);
-                mesh.rotatey(rotation.y);
-                mesh.rotatex(rotation.x);
+                rotation.inv_rot_zyx(mesh.rotation);
+                mesh.rotate_z(rotation.z);
+                mesh.rotate_y(rotation.y);
+                mesh.rotate_x(rotation.x);
             }
             if window.is_key_down(Key::W) {
-                mesh.rotatex(0.02);
+                mesh.rotate_x(0.02);
             }
             if window.is_key_down(Key::A) {
-                mesh.rotatey(0.02);
+                mesh.rotate_y(0.02);
             }
             if window.is_key_down(Key::Q) {
-                mesh.rotatez(0.02);
+                mesh.rotate_z(0.02);
             }
             if window.is_key_down(Key::S) {
-                mesh.rotatex(-0.02);
+                mesh.rotate_x(-0.02);
             }
             if window.is_key_down(Key::D) {
-                mesh.rotatey(-0.02);
+                mesh.rotate_y(-0.02);
             }
             if window.is_key_down(Key::E) {
-                mesh.rotatez(-0.02);
+                mesh.rotate_z(-0.02);
             }
             // mesh.rotatex(0.01);
             // mesh.rotatey(0.005);

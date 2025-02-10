@@ -37,7 +37,7 @@ impl<'d> Renderer<'d> {
 
     pub fn render_wireframe(&mut self) {
         self.mesh.tris.iter().for_each(|tri| {
-            if let Some(polydata) = self.prepare_triangle(tri) {
+            if let Some(polydata) = self.initialize_triangle_render(tri) {
                 let mut color = Color::cons(0, 255, 255);
                 color.attenuate(polydata.lighting);
                 self.draw_line_screen(polydata.tri.a.pos, polydata.tri.b.pos, color);
@@ -53,6 +53,11 @@ impl<'d> Renderer<'d> {
         let mut x_arm = Vec3f::cons(frame.length, 0., 0.);
         let mut y_arm = Vec3f::cons(0., frame.length, 0.);
         let mut z_arm = Vec3f::cons(0., 0., frame.length);
+
+        x_arm.rot_zyx(-self.camera.rotation);
+        y_arm.rot_zyx(-self.camera.rotation);
+        z_arm.rot_zyx(-self.camera.rotation);
+
         x_arm.rot_zyx(self.mesh.rotation);
         y_arm.rot_zyx(self.mesh.rotation);
         z_arm.rot_zyx(self.mesh.rotation);
@@ -68,7 +73,7 @@ impl<'d> Renderer<'d> {
     }
 
     fn render_triangle(&mut self, tri: &Tri) {
-        if let Some(polydata) = self.prepare_triangle(tri) {
+        if let Some(polydata) = self.initialize_triangle_render(tri) {
             let (a, b, c) = (polydata.tri.a.pos, polydata.tri.b.pos, polydata.tri.c.pos);
             if polydata.tri.lumped_left() {
                 self.trace_and_fill(&polydata, a, c, a, b);
@@ -81,7 +86,7 @@ impl<'d> Renderer<'d> {
         }
     }
 
-    fn prepare_triangle(&mut self, tri: &Tri) -> Option<PolyData> {
+    fn initialize_triangle_render(&mut self, tri: &Tri) -> Option<PolyData> {
         let mut triangle: Tri = *tri;
         self.transform_tri(&mut triangle);
 
@@ -113,8 +118,8 @@ impl<'d> Renderer<'d> {
     }
 
     fn transform_tri(&mut self, triangle: &mut Tri) {
-        triangle.rot_xyz(self.mesh.rotation);
         triangle.rot_zyx(-self.camera.rotation);
+        triangle.rot_xyz(self.mesh.rotation);
         triangle.translate(-self.camera.position);
         triangle.translate(self.mesh.center);
     }

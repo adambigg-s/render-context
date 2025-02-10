@@ -3,6 +3,7 @@
 
 
 
+use crate::geometry::Mesh;
 use crate::{Float, BACKGROUND};
 use crate::math::{Floatify, Vec3f};
 
@@ -129,5 +130,17 @@ impl Camera {
             position,
             rotation: Vec3f::cons(0, 0, 0),
         }
+    }
+}
+
+
+
+pub struct Scene {
+    objects: Vec<Mesh>,
+}
+
+impl Scene {
+    pub fn new() -> Scene {
+        Scene { objects: Vec::new() }
     }
 }

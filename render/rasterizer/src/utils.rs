@@ -1,9 +1,9 @@
 
 
 
-use minifb::{Key, Scale, Window, WindowOptions};
+use minifb::{Key, MouseButton, Scale, Window, WindowOptions};
 
-use crate::{geometry::{Mesh, Tri}, math::Vec3f, render_utils::Buffer, renderer::Renderer};
+use crate::{geometry::{Mesh, Tri}, math::{Vec2f, Vec3f}, render_utils::Buffer, renderer::Renderer};
 
 
 
@@ -56,7 +56,7 @@ pub fn make_mesh() -> Mesh {
     mesh
 }
 
-pub fn handle_mutation_input(window: &Window, mesh: &mut Mesh) {
+pub fn handle_mutation_input(window: &Window, mesh: &mut Mesh, mouse: &mut Option<Vec2f>) {
     if !window.is_key_down(Key::R) {
         if window.is_key_down(Key::K) {
             let mut rotation = Vec3f::cons(0., 0., 0.1);
@@ -72,22 +72,35 @@ pub fn handle_mutation_input(window: &Window, mesh: &mut Mesh) {
             mesh.rotate_y(-0.02);
         }
         if window.is_key_down(Key::A) {
-            mesh.rotate_x(0.02);
-        }
-        if window.is_key_down(Key::D) {
-            mesh.rotate_x(-0.02);
-        }
-        if window.is_key_down(Key::Q) {
             mesh.rotate_z(0.02);
         }
-        if window.is_key_down(Key::E) {
+        if window.is_key_down(Key::D) {
             mesh.rotate_z(-0.02);
+        }
+        if window.is_key_down(Key::Q) {
+            mesh.rotate_x(0.02);
+        }
+        if window.is_key_down(Key::E) {
+            mesh.rotate_x(-0.02);
         }
     }
     else {
         mesh.rotate_x(0.01);
         mesh.rotate_y(0.005);
         mesh.rotate_z(0.01);
+    }
+
+    if let Some((x, y)) = window.get_mouse_pos(minifb::MouseMode::Discard) {
+        if window.get_mouse_down(MouseButton::Left) {
+            if let Some(past_pos) = mouse {
+                let screen_dx = -(past_pos.x - x);
+                let screen_dy = past_pos.y - y;
+
+                mesh.rotate_y(screen_dy * 0.01);
+                mesh.rotate_z(screen_dx * 0.01);
+            }
+        }
+        *mouse = Some(Vec2f::cons(x, y));
     }
 }
 

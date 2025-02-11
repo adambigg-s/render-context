@@ -44,6 +44,7 @@ fn main() {
     let mut mesh = make_mesh();
     let camera = Camera::cons(Vec3f::cons(-100, 0, 0));
     let frame = RefFrame::cons(Vec3f::cons(0, 0, 0), 80.);
+    let mut mouse = None;
 
     while !window.is_key_down(Key::Escape) && !window.is_key_down(Key::C) {
         let framestart = Instant::now();
@@ -52,7 +53,7 @@ fn main() {
         let mut renderer = Renderer::cons(&mut buffer, &mesh, &camera, FOV);
         renderer.render_refframe(&frame);
         handle_renderer_input(&window, renderer);
-        handle_mutation_input(&window, &mut mesh);
+        handle_mutation_input(&window, &mut mesh, &mut mouse);
 
         window.update_with_buffer(buffer.get_pixels(), buffer.width, buffer.height).unwrap();
         print!("\x1b[7Hframe time: {ftime: >3} ms", ftime = framestart.elapsed().as_millis());

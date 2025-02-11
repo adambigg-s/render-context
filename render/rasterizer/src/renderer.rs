@@ -24,7 +24,7 @@ impl<'d> Renderer<'d> {
         let mut lighting_vec = Vec3f::cons(-3, 1, 4);
         lighting_vec.normalize();
         let scale = buffer.get_half_width() / (fov / 2.).to_degrees().tan();
-        let overdraw_percent = 0.15;
+        let overdraw_percent = 0.0;
 
         Renderer { buffer, mesh, camera, lighting_vec, scale, overdraw_percent }
     }

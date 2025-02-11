@@ -16,7 +16,8 @@ pub struct Renderer<'d> {
     camera: &'d Camera,
     lighting_vec: Vec3f,
     scale: Float,
-    overdraw_percent: Float
+    overdraw_percent: Float,
+    minimum_lighting: Float,
 }
 
 impl<'d> Renderer<'d> {
@@ -25,8 +26,9 @@ impl<'d> Renderer<'d> {
         lighting_vec.normalize();
         let scale = buffer.get_half_width() / (fov / 2.).to_degrees().tan();
         let overdraw_percent = 0.0;
+        let minimum_lighting = 0.15;
 
-        Renderer { buffer, mesh, camera, lighting_vec, scale, overdraw_percent }
+        Renderer { buffer, mesh, camera, lighting_vec, scale, overdraw_percent, minimum_lighting }
     }
 
     pub fn render_mesh(&mut self) {
@@ -94,9 +96,14 @@ impl<'d> Renderer<'d> {
         if norm.x > self.overdraw_percent {
             return None;
         }
-        let lighting = self.lighting_vec.inner_prod(&norm).max(0.05);
+        
+        let lighting = self.lighting_vec.inner_prod(&norm).max(self.minimum_lighting);
 
         self.transform_to_screen(&mut triangle);
+        if triangle.behind_view() {
+            return None;
+        }
+        
         triangle.sort_verts_vertical();
         
         Some(PolyData::cons(triangle, norm, lighting))
@@ -115,13 +122,16 @@ impl<'d> Renderer<'d> {
         triangle.a.pos = self.view_to_screen(&triangle.a.pos);
         triangle.b.pos = self.view_to_screen(&triangle.b.pos);
         triangle.c.pos = self.view_to_screen(&triangle.c.pos);
+        triangle.a.pos.clamp_xy(0., self.buffer.get_width(), 0., self.buffer.get_height());
+        triangle.b.pos.clamp_xy(0., self.buffer.get_width(), 0., self.buffer.get_height());
+        triangle.c.pos.clamp_xy(0., self.buffer.get_width(), 0., self.buffer.get_height());
     }
 
     fn transform_tri(&mut self, triangle: &mut Tri) {
-        triangle.rot_zyx(-self.camera.rotation);
         triangle.rot_xyz(self.mesh.rotation);
         triangle.translate(-self.camera.position);
         triangle.translate(self.mesh.center);
+        triangle.rot_zyx(-self.camera.rotation);
     }
 
     fn fill_edge_trace(&mut self, starting: &Vec2i, ending: &Vec2i, poly: &PolyData, bary: &BarycentricSystem) {

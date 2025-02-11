@@ -16,7 +16,7 @@ use geometry::RefFrame;
 use math::Vec3f;
 use render_utils::{Buffer, Camera, Color};
 use renderer::Renderer;
-use utils::{handle_mutation_input, handle_renderer_input, make_mesh, make_window};
+use utils::{handle_camera_input, handle_mutation_input, handle_renderer_input, make_mesh, make_window};
 
 
 
@@ -28,7 +28,7 @@ type Int = i32;
 const FOV: Float = 90.;
 const FPS: usize = 120;
 const BACKGROUND: u32 = 0xffbbbbbb;
-const RESMOD: usize = 5;
+const RESMOD: usize = 3;
 const HEIGHT: usize = 1080 / RESMOD;
 const WIDTH: usize = 1920 / RESMOD;
 
@@ -42,7 +42,7 @@ fn main() {
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
     let mut window = make_window(&buffer, FPS, Scale::X4);
     let mut mesh = make_mesh();
-    let camera = Camera::cons(Vec3f::cons(-100, 0, 0));
+    let mut camera = Camera::cons(Vec3f::cons(-100, 0, 0));
     let frame = RefFrame::cons(Vec3f::cons(0, 0, 0), 80.);
     let mut mouse = None;
 
@@ -54,9 +54,11 @@ fn main() {
         renderer.render_refframe(&frame);
         handle_renderer_input(&window, renderer);
         handle_mutation_input(&window, &mut mesh, &mut mouse);
+        handle_camera_input(&window, &mut camera);
 
         window.update_with_buffer(buffer.get_pixels(), buffer.width, buffer.height).unwrap();
         print!("\x1b[7Hframe time: {ftime: >3} ms", ftime = framestart.elapsed().as_millis());
     }
     print!("\x1b[0m");
 }
+

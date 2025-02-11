@@ -160,6 +160,10 @@ impl Tri {
         let v2 = self.a.pos - self.c.pos;
         v1.x * v2.y - v1.y * v2.x >= 0.
     }
+
+    pub fn behind_view(&self) -> bool {
+        self.a.pos.z < 0.1 || self.b.pos.z < 0.1 || self.c.pos.z < 0.1
+    }
 }
 
 
@@ -285,6 +289,10 @@ pub struct BarycentricSystem<'d> {
     b: Vec3f,
     c: Vec3f,
     inv_den: Float,
+    bc_y: Float,
+    cb_x: Float,
+    ca_y: Float,
+    ac_x: Float,
 }
 
 impl BarycentricSystem<'_> {
@@ -294,18 +302,23 @@ impl BarycentricSystem<'_> {
         let c = triangle.c.pos;
         let den = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
         let inv_den = 1. / den;
-        
-        BarycentricSystem { triangle, a, b, c, inv_den }
+
+        BarycentricSystem { triangle, a, b, c, inv_den, bc_y: b.y - c.y, cb_x: c.x - b.x, ca_y: c.y - a.y, ac_x: a.x - c.x }
     }
 
     pub fn get_coords(&self, x: Int, y: Int) -> Vec3f {
         let x = x as Float;
         let y = y as Float;
-        let a = self.a;
-        let b = self.b;
-        let c = self.c;
-        let w1 = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) * self.inv_den;
-        let w2 = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) * self.inv_den;
+        
+        // let a = self.a;
+        // let b = self.b;
+        // let c = self.c;
+        // let w1 = ((b.y - c.y) * (x - c.x) + (c.x - b.x) * (y - c.y)) * self.inv_den;
+        // let w2 = ((c.y - a.y) * (x - c.x) + (a.x - c.x) * (y - c.y)) * self.inv_den;
+
+        let w1 = (self.bc_y * (x - self.c.x) + self.cb_x * (y - self.c.y)) * self.inv_den;
+        let w2 = (self.ca_y * (x - self.c.x) + self.ac_x * (y - self.c.y)) * self.inv_den;
+        
         Vec3f::cons(w1, w2, 1. - w1 - w2)
     }
 }

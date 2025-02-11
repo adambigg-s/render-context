@@ -241,6 +241,11 @@ impl Vec3f {
             self.x * other.y - self.y * other.x
         )
     }
+
+    pub fn clamp_xy(&mut self, min_x: Float, max_x: Float, min_y: Float, max_y: Float) {
+        self.x = self.x.clamp(min_x, max_x);
+        self.y = self.y.clamp(min_y, max_y);
+    }
 }
 
 

@@ -177,7 +177,9 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn cons(tris: Vec<Tri>, center: Vec3f, texpath: Option<&str>) -> Mesh {
-        Mesh { tris, center, rotation: Vec3f::cons(0, 0, 0), texture: texpath.map(Texture::build_from_file) }
+        Mesh {
+            tris, center, rotation: Vec3f::cons(0, 0, 0), texture: texpath.map(Texture::build_from_file),
+        }
     }
 
     pub fn build_from_file(path: &str, scaling: Float) -> Mesh {
@@ -303,7 +305,10 @@ impl BarycentricSystem<'_> {
         let den = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
         let inv_den = 1. / den;
 
-        BarycentricSystem { triangle, a, b, c, inv_den, bc_y: b.y - c.y, cb_x: c.x - b.x, ca_y: c.y - a.y, ac_x: a.x - c.x }
+        BarycentricSystem {
+            triangle, a, b, c, inv_den, bc_y: b.y - c.y,
+            cb_x: c.x - b.x, ca_y: c.y - a.y, ac_x: a.x - c.x,
+        }
     }
 
     pub fn get_coords(&self, x: Int, y: Int) -> Vec3f {

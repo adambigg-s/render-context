@@ -49,7 +49,10 @@ impl Texture {
         let ny = ((y * self.get_height()) as usize).min(self.height-1);
 
         {
-            debug_assert!(self.inbounds(nx, ny), "index: {},{} dims: {},{}", nx, ny, self.width, self.height);
+            debug_assert!(
+                self.inbounds(nx, ny),
+                "index: {},{} dims: {},{}", nx, ny, self.width, self.height
+            );
         }
 
         ny * self.width + nx

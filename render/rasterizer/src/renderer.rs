@@ -22,7 +22,7 @@ pub struct Renderer<'d> {
 
 impl<'d> Renderer<'d> {
     pub fn cons(buffer: &'d mut Buffer, mesh: &'d Mesh, camera: &'d Camera, fov: Float) -> Renderer<'d> {
-        let mut lighting_vec = Vec3f::cons(-3, 1, 4);
+        let mut lighting_vec = Vec3f::cons(-3, 1, -4);
         lighting_vec.normalize();
         let scale = buffer.get_half_width() / (fov / 2.).to_degrees().tan();
         let overdraw_percent = 0.0;
@@ -90,14 +90,21 @@ impl<'d> Renderer<'d> {
 
     fn initialize_triangle_render(&mut self, tri: &Tri) -> Option<PolyData> {
         let mut triangle: Tri = *tri;
+        
+        // super super needs to be changed! haven't done lighting yet and this is a
+        // major bottleneck at the current moment. def a better way to do this, maybe have
+        // PolyData hold two norms world and viewframe and can be stored during poly calcs
+        // so norm doesn't have to be done like 3 times for no reason
+        let mut world_norm = triangle.get_normal();
+        world_norm.rot_zyx(self.mesh.rotation);
+        let lighting = self.lighting_vec.inner_prod(&world_norm).max(self.minimum_lighting);
+        
         self.transform_tri(&mut triangle);
 
         let norm = triangle.get_normal();
         if norm.x > self.overdraw_percent {
             return None;
         }
-        
-        let lighting = self.lighting_vec.inner_prod(&norm).max(self.minimum_lighting);
 
         self.transform_to_screen(&mut triangle);
         if triangle.behind_view() {
@@ -134,7 +141,9 @@ impl<'d> Renderer<'d> {
         triangle.rot_zyx(-self.camera.rotation);
     }
 
-    fn fill_edge_trace(&mut self, starting: &Vec2i, ending: &Vec2i, poly: &PolyData, bary: &BarycentricSystem) {
+    fn fill_edge_trace(
+        &mut self, starting: &Vec2i, ending: &Vec2i, poly: &PolyData, bary: &BarycentricSystem)
+    {
         {
             debug_assert!(starting.y == ending.y);
         }

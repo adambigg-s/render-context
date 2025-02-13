@@ -59,7 +59,10 @@ pub struct Buffer {
 
 impl Buffer {
     pub fn cons(height: usize, width: usize) -> Buffer {
-        Buffer { height, width, pixels: vec![BACKGROUND; width * height], depth: vec![1e+12; width * height], }
+        Buffer {
+            height, width, pixels:
+            vec![BACKGROUND; width * height], depth: vec![1e+12; width * height],
+        }
     }
 
     pub fn set(&mut self, x: usize, y: usize, color: Color, depth: Float) {

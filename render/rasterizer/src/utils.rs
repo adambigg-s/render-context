@@ -4,7 +4,11 @@
 
 use minifb::{Key, MouseButton, MouseMode, Scale, Window, WindowOptions};
 
-use crate::{geometry::{Mesh, Tri}, math::{Vec2f, Vec3f}, render_utils::{Buffer, Camera}, renderer::Renderer, PI};
+use crate::PI;
+use crate::renderer::Renderer;
+use crate::render_utils::{Buffer, Camera};
+use crate::math::{Vec2f, Vec3f};
+use crate::geometry::{Mesh, Tri};
 
 
 
@@ -49,12 +53,12 @@ pub fn make_mesh() -> Mesh {
 
     let mut mesh = Mesh::cons(vec![tri1], Vec3f::cons(0, -50, 0), None);
     mesh.tris.push(tri2);
+    let mut mesh = Mesh::build_from_file_extended("ak47/ak47.obj", 1., Some("ak47/ak47.png"));
     let mut mesh = Mesh::build_from_file("misc/icosahedron.vert", 55.);
     let mut mesh = Mesh::build_from_file_extended("misc/room.obj", 1., None);
-    let mut mesh = Mesh::build_from_file_extended("ak47/ak47.obj", 1., Some("ak47/ak47.png"));
     let mut mesh = Mesh::build_from_file_extended("misc/eyeball.obj", 35., None);
     let mut mesh = Mesh::build_from_file_extended("portal/portal.obj", 55., Some("portal/portal_tex.jpg"));
-    let mut mesh = Mesh::build_from_file_extended("misc/sculpture.obj", 30., None);
+    let mut mesh = Mesh::build_from_file_extended("misc/sculpture.obj", 35., None);
     mesh.center = Vec3f::cons(0, 0, 0);
     mesh.rotation.x += PI / 2.;
     mesh
@@ -115,6 +119,7 @@ pub fn handle_camera_input(window: &Window, camera: &mut Camera) {
     if window.is_key_down(Key::Q) {
         camera.rotate_vertical(0.05);
     }
+    
     if window.is_key_down(Key::W) {
         let mut delta = Vec3f::cons(1, 0, 0);
         delta.rot_z(camera.rotation.z);
@@ -135,6 +140,7 @@ pub fn handle_camera_input(window: &Window, camera: &mut Camera) {
         delta.rot_z(camera.rotation.z);
         camera.position += delta;
     }
+    
     if window.is_key_down(Key::R) {
         camera.position.z += 1.;
     }

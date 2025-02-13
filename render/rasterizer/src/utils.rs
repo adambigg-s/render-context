@@ -1,9 +1,10 @@
+#![cfg_attr(rustfmt, rustfmt_skip)]
 
 
 
 use minifb::{Key, MouseButton, MouseMode, Scale, Window, WindowOptions};
 
-use crate::{geometry::{Mesh, Tri}, math::{Vec2f, Vec3f}, render_utils::{Buffer, Camera}, renderer::Renderer};
+use crate::{geometry::{Mesh, Tri}, math::{Vec2f, Vec3f}, render_utils::{Buffer, Camera}, renderer::Renderer, PI};
 
 
 
@@ -49,39 +50,24 @@ pub fn make_mesh() -> Mesh {
     let mut mesh = Mesh::cons(vec![tri1], Vec3f::cons(0, -50, 0), None);
     mesh.tris.push(tri2);
     let mut mesh = Mesh::build_from_file("misc/icosahedron.vert", 55.);
+    let mut mesh = Mesh::build_from_file_extended("misc/room.obj", 1., None);
     let mut mesh = Mesh::build_from_file_extended("ak47/ak47.obj", 1., Some("ak47/ak47.png"));
     let mut mesh = Mesh::build_from_file_extended("misc/eyeball.obj", 35., None);
     let mut mesh = Mesh::build_from_file_extended("portal/portal.obj", 55., Some("portal/portal_tex.jpg"));
+    let mut mesh = Mesh::build_from_file_extended("misc/sculpture.obj", 30., None);
     mesh.center = Vec3f::cons(0, 0, 0);
+    mesh.rotation.x += PI / 2.;
     mesh
 }
 
 pub fn handle_mutation_input(window: &Window, mesh: &mut Mesh, mouse: &mut Option<Vec2f>) {
-    if !window.is_key_down(Key::R) {
+    if !window.is_key_down(Key::T) {
         if window.is_key_down(Key::K) {
             let mut rotation = Vec3f::cons(0., 0., 0.1);
             rotation.inv_rot_zyx(mesh.rotation);
             mesh.rotate_z(rotation.z);
             mesh.rotate_y(rotation.y);
             mesh.rotate_x(rotation.x);
-        }
-        if window.is_key_down(Key::W) {
-            mesh.rotate_y(0.02);
-        }
-        if window.is_key_down(Key::S) {
-            mesh.rotate_y(-0.02);
-        }
-        if window.is_key_down(Key::A) {
-            mesh.rotate_z(0.02);
-        }
-        if window.is_key_down(Key::D) {
-            mesh.rotate_z(-0.02);
-        }
-        if window.is_key_down(Key::Q) {
-            mesh.rotate_x(0.02);
-        }
-        if window.is_key_down(Key::E) {
-            mesh.rotate_x(-0.02);
         }
     }
     else {
@@ -118,16 +104,42 @@ pub fn handle_renderer_input(window: &Window, mut renderer: Renderer) {
 
 pub fn handle_camera_input(window: &Window, camera: &mut Camera) {
     if window.is_key_down(Key::Up) {
-        camera.position.x += 0.5;
+        camera.rotate_horizontal(-0.05);
     }
-    else if window.is_key_down(Key::Down) {
-        camera.position.x -= 0.5;
+    if window.is_key_down(Key::Down) {
+        camera.rotate_horizontal(0.05);
     }
-    else if window.is_key_down(Key::Right) {
-        camera.rotation.z += 0.05;
+    if window.is_key_down(Key::E) {
+        camera.rotate_vertical(-0.05);
     }
-    else if window.is_key_down(Key::Left) {
-        camera.rotation.z -= 0.05;
+    if window.is_key_down(Key::Q) {
+        camera.rotate_vertical(0.05);
+    }
+    if window.is_key_down(Key::W) {
+        let mut delta = Vec3f::cons(1, 0, 0);
+        delta.rot_z(camera.rotation.z);
+        camera.position += delta;
+    }
+    if window.is_key_down(Key::S) {
+        let mut delta = Vec3f::cons(-1, 0, 0);
+        delta.rot_z(camera.rotation.z);
+        camera.position += delta;
+    }
+    if window.is_key_down(Key::A) {
+        let mut delta = Vec3f::cons(0, 1, 0);
+        delta.rot_z(camera.rotation.z);
+        camera.position += delta;
+    }
+    if window.is_key_down(Key::D) {
+        let mut delta = Vec3f::cons(0, -1, 0);
+        delta.rot_z(camera.rotation.z);
+        camera.position += delta;
+    }
+    if window.is_key_down(Key::R) {
+        camera.position.z += 1.;
+    }
+    if window.is_key_down(Key::F) {
+        camera.position.z -= 1.;
     }
 }
 

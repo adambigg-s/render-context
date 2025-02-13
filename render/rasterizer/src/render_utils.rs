@@ -131,6 +131,14 @@ impl Camera {
             rotation: Vec3f::cons(0, 0, 0),
         }
     }
+
+    pub fn rotate_horizontal(&mut self, angle: Float) {
+        self.rotation.y += angle;
+    }
+
+    pub fn rotate_vertical(&mut self, angle: Float) {
+        self.rotation.z += angle;
+    }
 }
 
 

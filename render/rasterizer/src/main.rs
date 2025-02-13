@@ -1,3 +1,6 @@
+#![allow(clippy::approx_constant)]
+#![cfg_attr(rustfmt, rustfmt_skip)]
+#![allow(dead_code)]
 
 
 
@@ -25,10 +28,15 @@ type Int = i32;
 
 
 
+const PI: Float = 3.141592;
+const TAU: Float = 2. * PI;
+
+
+
 const FOV: Float = 90.;
 const FPS: usize = 120;
 const BACKGROUND: u32 = 0xffbbbbbb;
-const RESMOD: usize = 3;
+const RESMOD: usize = 4;
 const HEIGHT: usize = 1080 / RESMOD;
 const WIDTH: usize = 1920 / RESMOD;
 
@@ -43,8 +51,8 @@ fn main() {
     let mut window = make_window(&buffer, FPS, Scale::X4);
     let mut mesh = make_mesh();
     let mut camera = Camera::cons(Vec3f::cons(-100, 0, 0));
-    let frame = RefFrame::cons(Vec3f::cons(0, 0, 0), 80.);
     let mut mouse = None;
+    let frame = RefFrame::cons(Vec3f::cons(0, 0, 0), 80.);
 
     while !window.is_key_down(Key::Escape) && !window.is_key_down(Key::C) {
         let framestart = Instant::now();

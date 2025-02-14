@@ -19,6 +19,12 @@ pub const Vec3f = struct {
         self.rot_x(angles.x);
     }
 
+    pub fn rot_xyz(self: *Vec3f, angles: Vec3f) void {
+        self.rot_x(angles.x);
+        self.rot_y(angles.y);
+        self.rot_z(angles.z);
+    }
+
     pub fn rot_x(self: *Vec3f, angle: f32) void {
         const sin = std.math.sin(angle);
         const cos = std.math.cos(angle);

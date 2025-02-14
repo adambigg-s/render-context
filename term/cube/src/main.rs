@@ -3,12 +3,12 @@
 
 const WIDTH: usize = 200;
 const HEIGHT: usize = 60;
-const CUBE_WIDTH: Float = 27.0;
-const DEPTHSCALINGX: Float = 175.0;
-const DEPTHSCALINGY: Float = 100.0;
-const DELTA: Float = 0.9;
-const FRAME_DELAY: u64 = 0;
-const DISTANCE: Float = 200.0;
+const CUBE_WIDTH: Float = 27.;
+const DEPTHSCALINGX: Float = 175.;
+const DEPTHSCALINGY: Float = 100.;
+const DELTA: Float = 1.;
+const FRAME_DELAY: u64 = 25;
+const DISTANCE: Float = 200.;
 const ROTX: Float = 0.01;
 const ROTY: Float = 0.04;
 const ROTZ: Float = 0.005;
@@ -199,6 +199,7 @@ fn main() {
         renderer.buffer.display();
         dump(renderer);
         cube.rotate();
+
         std::thread::sleep(std::time::Duration::from_millis(FRAME_DELAY));
     }
 }

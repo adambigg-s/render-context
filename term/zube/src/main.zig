@@ -11,12 +11,12 @@ const cubedims: i32 = 27;
 const camdistance: f32 = 200;
 const xscale: f32 = 175;
 const yscale: f32 = 100;
-const delta: f32 = 0.9;
+const delta: f32 = 1;
 
 const rotx: f32 = 0.01;
 const roty: f32 = 0.04;
-const rotz: f32 = 0.05;
-const fdelay: u64 = 0;
+const rotz: f32 = 0.005;
+const fdelay: u64 = 25;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -74,11 +74,11 @@ const Buffer = struct {
         while (cubeu <= cube.dims) : (cubeu += step) {
             var cubev = -cube.dims;
             while (cubev <= cube.dims) : (cubev += step) {
-                self.calc_surface(cube, '^', cubeu, cubev, cube.dims);
-                self.calc_surface(cube, '.', cubeu, cubev, -cube.dims);
-                self.calc_surface(cube, '@', cube.dims, cubeu, cubev);
-                self.calc_surface(cube, '*', -cube.dims, cubeu, cubev);
-                self.calc_surface(cube, ',', cubeu, cube.dims, cubev);
+                self.calc_surface(cube, '$', cubeu, cubev, cube.dims);
+                self.calc_surface(cube, ',', cubeu, cubev, -cube.dims);
+                self.calc_surface(cube, '!', cube.dims, cubeu, cubev);
+                self.calc_surface(cube, '~', -cube.dims, cubeu, cubev);
+                self.calc_surface(cube, '>', cubeu, cube.dims, cubev);
                 self.calc_surface(cube, '|', cubeu, -cube.dims, cubev);
             }
         }
@@ -102,7 +102,7 @@ const Buffer = struct {
 
     fn calc_surface(self: *Buffer, cube: *Cube, char: u8, x: f32, y: f32, z: f32) void {
         var point = Vec3f.init(x, y, z);
-        point.rot_zyx(cube.rotation);
+        point.rot_xyz(cube.rotation);
         point.z += camdistance;
 
         if (point.z <= 0.1) {

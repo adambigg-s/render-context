@@ -14,7 +14,6 @@
 #define SCALING_X 175
 #define SCALING_Y 100
 #define DELTA 0.9
-#define FRAME_DELAY 10
 #define CAMDISTANCE 200
 #define ROT_DELTA_X 0.01
 #define ROT_DELTA_Y 0.04
@@ -142,7 +141,5 @@ int main() {
          render_cube(&cube);
          display_frame(&cube);
          rotate_cube(&cube);
-
-         Sleep(FRAME_DELAY);
      }
 }

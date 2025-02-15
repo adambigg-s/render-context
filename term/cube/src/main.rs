@@ -1,6 +1,3 @@
-
-
-
 const WIDTH: usize = 200;
 const HEIGHT: usize = 60;
 const CUBE_WIDTH: Float = 27.;
@@ -12,8 +9,6 @@ const DISTANCE: Float = 200.;
 const ROTX: Float = 0.01;
 const ROTY: Float = 0.04;
 const ROTZ: Float = 0.005;
-
-
 
 type Float = f32;
 
@@ -38,33 +33,28 @@ struct Cube {
 }
 
 impl Cube {
+    #[rustfmt::skip]
     fn cons(sidelen: Float, rotspeed: Tri) -> Cube {
-        Cube{ sidelen, a: 0.0, b: 0.0, c: 0.0, rotspeed }
+        Cube { sidelen, a: 0.0, b: 0.0, c: 0.0, rotspeed }
     }
 
     fn euler_rotate_u(&self, i: Float, j: Float, k: Float) -> Float {
         let (a, b, c) = (self.a, self.b, self.c);
         i * b.cos() * c.cos()
-            + j * (a.sin() * b.sin() * c.cos()
-                - a.cos() * c.sin())
-            + k * (a.cos() * b.sin() * c.cos()
-                + a.sin() * c.sin())
+            + j * (a.sin() * b.sin() * c.cos() - a.cos() * c.sin())
+            + k * (a.cos() * b.sin() * c.cos() + a.sin() * c.sin())
     }
 
     fn euler_rotate_v(&self, i: Float, j: Float, k: Float) -> Float {
         let (a, b, c) = (self.a, self.b, self.c);
         i * b.cos() * c.sin()
-            + j * (a.sin() * b.sin() * c.sin()
-                + a.cos() * c.cos())
-            + k * (a.cos() * b.sin() * c.sin()
-                - a.sin() * c.cos())
+            + j * (a.sin() * b.sin() * c.sin() + a.cos() * c.cos())
+            + k * (a.cos() * b.sin() * c.sin() - a.sin() * c.cos())
     }
 
     fn euler_rotate_w(&self, i: Float, j: Float, k: Float) -> Float {
         let (a, b) = (self.a, self.b);
-        i * -(b.sin())
-            + j * a.sin() * b.cos()
-            + k * a.cos() * b.cos()
+        i * -(b.sin()) + j * a.sin() * b.cos() + k * a.cos() * b.cos()
     }
 
     fn rotate(&mut self) {
@@ -85,7 +75,12 @@ impl Buffer {
     fn cons(height: usize, width: usize) -> Buffer {
         let visual = vec![intchr(0); width * height];
         let zbuffer = vec![0.0; width * height];
-        Buffer { visual, zbuffer, height, width }
+        Buffer {
+            visual,
+            zbuffer,
+            height,
+            width,
+        }
     }
 
     fn clear(&mut self) {
@@ -98,8 +93,7 @@ impl Buffer {
         self.visual.iter().enumerate().for_each(|(idx, ele)| {
             if idx % self.width != 0 {
                 string.push(*ele);
-            }
-            else {
+            } else {
                 string.push('\n');
             }
         });
@@ -131,7 +125,7 @@ impl<'d> RenderContext<'d> {
     fn cons(cube: &'d Cube, buffer: &'d mut Buffer) -> RenderContext<'d> {
         RenderContext { cube, buffer }
     }
-    
+
     fn render_cube(&mut self) {
         let mut cubex = -self.cube.sidelen;
         while cubex < self.cube.sidelen {
@@ -203,4 +197,3 @@ fn main() {
         std::thread::sleep(std::time::Duration::from_millis(FRAME_DELAY));
     }
 }
-

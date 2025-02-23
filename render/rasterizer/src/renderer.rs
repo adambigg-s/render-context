@@ -25,7 +25,7 @@ impl<'d> Renderer<'d> {
         let mut lighting_vec = Vec3f::cons(-3, 1, -4);
         lighting_vec.normalize();
         let scale = buffer.get_half_width() / (fov / 2.).to_degrees().tan();
-        let overdraw_percent = 0.0;
+        let overdraw_percent = 0.20;
         let minimum_lighting = 0.15;
 
         Renderer { buffer, mesh, camera, lighting_vec, scale, overdraw_percent, minimum_lighting }
@@ -149,7 +149,7 @@ impl<'d> Renderer<'d> {
         }
 
         let y = starting.y;
-        for x in starting.x..ending.x {
+        for x in starting.x..=ending.x {
             if !self.buffer.inbounds(x as usize, y as usize) { return; }
 
             let mut color = Color::default();

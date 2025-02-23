@@ -36,7 +36,7 @@ const TAU: Float = 2. * PI;
 const FOV: Float = 90.;
 const FPS: usize = 120;
 const BACKGROUND: u32 = 0xffbbbbbb;
-const RESMOD: usize = 4;
+const RESMOD: usize = 2;
 const HEIGHT: usize = 1080 / RESMOD;
 const WIDTH: usize = 1920 / RESMOD;
 
@@ -48,7 +48,7 @@ fn main() {
         std::env::set_var("RUST_BACKTRACE", "full");
     }
     let mut buffer = Buffer::cons(HEIGHT, WIDTH);
-    let mut window = make_window(&buffer, FPS, Scale::X4);
+    let mut window = make_window(&buffer, FPS, Scale::X2);
     let mut mesh = make_mesh();
     let mut camera = Camera::cons(Vec3f::cons(-100, 0, 0));
     let mut mouse = None;

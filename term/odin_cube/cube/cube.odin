@@ -1,18 +1,18 @@
 package cube
 
-import "../math"
+import m "../math"
 
 Cube :: struct {
-	position: math.Vec3,
-	rotation: math.Vec3,
+	position: m.Vec3,
+	rotation: m.Vec3,
 	size:     f32,
 }
 
-build :: proc(size: f32) -> Cube {
-	return Cube{position = math.vec3_zeros(), rotation = math.vec3_zeros(), size = size}
+cube_build :: proc(size: f32) -> Cube {
+	return Cube{position = m.vec3_zeros(), rotation = m.vec3_zeros(), size = size}
 }
 
-cube_rotate :: proc(self: ^Cube, angles: math.Vec3) {
+cube_rotate :: proc(self: ^Cube, angles: m.Vec3) {
 	self.rotation.x += angles.x
 	self.rotation.y += angles.y
 	self.rotation.z += angles.z

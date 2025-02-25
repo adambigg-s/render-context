@@ -29,7 +29,7 @@ render_cube :: proc(self: ^Renderer) {
 }
 
 calc_surface :: proc(self: ^Renderer, x: f32, y: f32, z: f32, char: rune) {
-	point := math.vec3f_build(x, y, z)
+	point := math.vec3_build(x, y, z)
 
 	xscale := cast(f32)175
 	yscale := cast(f32)100

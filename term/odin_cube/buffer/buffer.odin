@@ -7,11 +7,10 @@ Buffer :: struct {
 	depth:  [dynamic]f32,
 }
 
-build :: proc(height: uint, width: uint) -> Buffer {
+buffer_build :: proc(height: uint, width: uint) -> Buffer {
 	pixels := make([dynamic]rune, height * width)
 	depth := make([dynamic]f32, height * width)
 	buffer := Buffer{height, width, pixels, depth}
-	clear(&buffer)
 
 	return buffer
 }

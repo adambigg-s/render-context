@@ -8,7 +8,7 @@ Vec3 :: struct {
 	z: f32,
 }
 
-vec3f_build :: proc(x, y, z: f32) -> Vec3 {
+vec3_build :: proc(x, y, z: f32) -> Vec3 {
 	return Vec3{x, y, z}
 }
 
